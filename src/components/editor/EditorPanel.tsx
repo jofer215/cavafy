@@ -1,22 +1,13 @@
 "use client";
 
 import { useProjectStore } from "@/store/project";
+import { findNode } from "@/lib/project/schema";
 import { TipTapEditor } from "./TipTapEditor";
+import { ScriveningsView } from "./ScriveningsView";
 import { BookOpen } from "lucide-react";
 
-function findNode(nodes: import("@/lib/project/schema").BinderNode[], id: string): import("@/lib/project/schema").BinderNode | null {
-  for (const n of nodes) {
-    if (n.id === id) return n;
-    if (n.children) {
-      const found = findNode(n.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
 export function EditorPanel() {
-  const { project, selectedNodeId, updateMetadata, save } = useProjectStore();
+  const { project, selectedNodeId, viewMode, updateMetadata, save } = useProjectStore();
 
   if (!project) return null;
 
@@ -28,25 +19,26 @@ export function EditorPanel() {
       >
         <BookOpen size={40} strokeWidth={1} style={{ color: "var(--text-faint)" }} />
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Select a document in the binder to start writing
+          Select a document to write, or a folder for Scrivenings view
         </p>
       </div>
     );
   }
 
-  const node = findNode(project.binder, selectedNodeId);
-  if (!node || node.type !== "document") {
+  // Folder selected → Scrivenings view
+  if (viewMode === "scrivenings") {
     return (
-      <div
-        className="flex-1 flex items-center justify-center"
-        style={{ backgroundColor: "var(--bg)" }}
-      >
-        <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Select a document to edit
-        </p>
-      </div>
+      <ScriveningsView
+        key={selectedNodeId}
+        folderId={selectedNodeId}
+        projectId={project.id}
+      />
     );
   }
+
+  // Document selected → single editor
+  const node = findNode(project.binder, selectedNodeId);
+  if (!node || node.type !== "document") return null;
 
   const handleWordCount = (wc: number) => {
     updateMetadata(node.id, {
@@ -58,26 +50,31 @@ export function EditorPanel() {
     save();
   };
 
+  if (!node.driveId) {
+    return (
+      <div
+        className="flex-1 flex items-center justify-center"
+        style={{ backgroundColor: "var(--bg)" }}
+      >
+        <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+          This document has no Drive file yet.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex-1 flex flex-col h-full overflow-hidden"
       style={{ backgroundColor: "var(--bg)" }}
     >
-      {node.driveId ? (
-        <TipTapEditor
-          key={node.id}
-          docId={node.driveId}
-          projectId={project.id}
-          title={node.title}
-          onWordCountChange={handleWordCount}
-        />
-      ) : (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-            This document has no Drive file yet. Try recreating the project.
-          </p>
-        </div>
-      )}
+      <TipTapEditor
+        key={node.id}
+        docId={node.driveId}
+        projectId={project.id}
+        title={node.title}
+        onWordCountChange={handleWordCount}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 export type NodeType = "folder" | "document" | "separator";
+export type NodeRole = "archive";
 
 export interface BinderNode {
   id: string;
@@ -7,12 +8,14 @@ export interface BinderNode {
   driveId?: string;       // Google Drive file or folder ID
   children?: BinderNode[];
   isExpanded?: boolean;
+  isActive?: boolean;     // false = excluded from manuscript builds (default true)
+  role?: NodeRole;        // "archive" marks the special Archive root folder
 }
 
 export interface StatusOption {
   id: string;
   name: string;
-  color: string; // hex or tailwind color name
+  color: string;
 }
 
 export interface LabelOption {
@@ -27,15 +30,29 @@ export interface CustomMetadataField {
   id: string;
   name: string;
   type: CustomFieldType;
-  options?: string[]; // dropdown choices
+  options?: string[];
+}
+
+export type TagCategory = "pov" | "char" | "location" | "plot" | "time" | "object" | "entity" | "custom";
+
+export interface DocumentTags {
+  pov?: string[];
+  char?: string[];
+  location?: string[];
+  plot?: string[];
+  time?: string[];
+  object?: string[];
+  entity?: string[];
+  custom?: string[];
 }
 
 export interface DocumentMetadata {
-  status?: string;        // StatusOption.id
-  label?: string;         // LabelOption.id
+  status?: string;
+  label?: string;
   synopsis?: string;
   notes?: string;
   wordCountGoal?: number;
+  tags?: DocumentTags;
   customFields?: Record<string, string | boolean | number>;
 }
 
@@ -44,13 +61,33 @@ export interface ProjectSettings {
   defaultLabel?: string;
   targetWordCount?: number;
   authorName?: string;
+  dailyWordCountGoal?: number;
+}
+
+// ── Plot Grid ──────────────────────────────────────────────────────────────
+
+export interface PlotLine {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface PlotCell {
+  // empty string = no connection; any text = note shown in cell
+  note: string;
+}
+
+export interface PlotGrid {
+  plotLines: PlotLine[];
+  // cells[plotLineId][nodeId] = PlotCell
+  cells: Record<string, Record<string, PlotCell>>;
 }
 
 export interface ProjectData {
   id: string;
   name: string;
-  created: string;    // ISO
-  modified: string;   // ISO
+  created: string;
+  modified: string;
   driveRootId: string;
   binder: BinderNode[];
   statuses: StatusOption[];
@@ -58,6 +95,7 @@ export interface ProjectData {
   customMetadataSchema: CustomMetadataField[];
   metadata: Record<string, DocumentMetadata>;
   settings: ProjectSettings;
+  plotGrid?: PlotGrid;
 }
 
 export const DEFAULT_STATUSES: StatusOption[] = [
@@ -75,13 +113,33 @@ export const DEFAULT_LABELS: LabelOption[] = [
   { id: "research",     name: "Research",     color: "#f97316" },
 ];
 
+// Collect all active document nodes under a folder, depth-first order
+export function collectDocuments(nodes: BinderNode[]): BinderNode[] {
+  const result: BinderNode[] = [];
+  for (const n of nodes) {
+    if (n.isActive === false) continue;
+    if (n.type === "document") {
+      result.push(n);
+    } else if (n.type === "folder" && n.children) {
+      result.push(...collectDocuments(n.children));
+    }
+  }
+  return result;
+}
+
+export function findNode(nodes: BinderNode[], id: string): BinderNode | null {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) {
+      const found = findNode(n.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export function createDefaultProject(id: string, name: string, driveRootId: string): ProjectData {
   const now = new Date().toISOString();
-  const manuscriptId = crypto.randomUUID();
-  const charactersId = crypto.randomUUID();
-  const placesId = crypto.randomUUID();
-  const researchId = crypto.randomUUID();
-  const notesId = crypto.randomUUID();
 
   return {
     id,
@@ -91,20 +149,34 @@ export function createDefaultProject(id: string, name: string, driveRootId: stri
     driveRootId,
     binder: [
       {
-        id: manuscriptId,
+        id: crypto.randomUUID(),
         title: "Manuscript",
         type: "folder",
         isExpanded: true,
         children: [
-          { id: crypto.randomUUID(), title: "Chapter 1", type: "folder", isExpanded: true, children: [
-            { id: crypto.randomUUID(), title: "Scene 1", type: "document" },
-          ]},
+          {
+            id: crypto.randomUUID(),
+            title: "Chapter 1",
+            type: "folder",
+            isExpanded: true,
+            children: [
+              { id: crypto.randomUUID(), title: "Scene 1", type: "document" },
+            ],
+          },
         ],
       },
-      { id: charactersId,  title: "Characters", type: "folder", children: [] },
-      { id: placesId,      title: "Places",     type: "folder", children: [] },
-      { id: researchId,    title: "Research",   type: "folder", children: [] },
-      { id: notesId,       title: "Notes",      type: "folder", children: [] },
+      { id: crypto.randomUUID(), title: "Characters", type: "folder", children: [] },
+      { id: crypto.randomUUID(), title: "Places",     type: "folder", children: [] },
+      { id: crypto.randomUUID(), title: "Research",   type: "folder", children: [] },
+      { id: crypto.randomUUID(), title: "Notes",      type: "folder", children: [] },
+      {
+        id: crypto.randomUUID(),
+        title: "Archive",
+        type: "folder",
+        role: "archive",
+        isExpanded: false,
+        children: [],
+      },
     ],
     statuses: DEFAULT_STATUSES,
     labels: DEFAULT_LABELS,
