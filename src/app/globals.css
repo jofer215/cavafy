@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+:root {
+  /* Warm parchment palette — light mode */
+  --bg:           #faf8f4;
+  --bg-sidebar:   #f0ede6;
+  --bg-panel:     #ece9e2;
+  --bg-elevated:  #ffffff;
+  --text:         #2d2926;
+  --text-muted:   #7c736a;
+  --text-faint:   #b0a89e;
+  --border:       #e2ddd5;
+  --border-soft:  #ede9e2;
+  --accent:       #4b7e91;
+  --accent-hover: #3d6878;
+  --accent-fg:    #ffffff;
+  --selection:    #d4e8ef;
+
+  --font-prose: "Georgia", "Times New Roman", serif;
+  --font-ui: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius: 0.5rem;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+.dark {
+  --bg:           #1c1a18;
+  --bg-sidebar:   #161412;
+  --bg-panel:     #221f1c;
+  --bg-elevated:  #2a2622;
+  --text:         #e8e4df;
+  --text-muted:   #9e9089;
+  --text-faint:   #5c544e;
+  --border:       #312d29;
+  --border-soft:  #2a2622;
+  --accent:       #5b9ab0;
+  --accent-hover: #4b8497;
+  --accent-fg:    #ffffff;
+  --selection:    #234455;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* TipTap prose editor styles */
+.ProseMirror {
+  font-family: var(--font-prose);
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  color: var(--text);
+  outline: none;
+  caret-color: var(--accent);
+  min-height: 100%;
+  padding: 3rem 4rem;
+}
+
+.ProseMirror p { margin: 0 0 1em; }
+.ProseMirror h1 { font-size: 1.75rem; font-weight: 700; margin: 1.5em 0 0.5em; }
+.ProseMirror h2 { font-size: 1.375rem; font-weight: 600; margin: 1.25em 0 0.4em; }
+.ProseMirror h3 { font-size: 1.125rem; font-weight: 600; margin: 1em 0 0.3em; }
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border);
+  margin: 1.25em 0;
+  padding-left: 1.25em;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.ProseMirror code {
+  background: var(--bg-panel);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+.ProseMirror pre {
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  padding: 1em;
+  overflow-x: auto;
+}
+.ProseMirror pre code { background: none; padding: 0; }
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.5em; }
+.ProseMirror li { margin: 0.25em 0; }
+.ProseMirror hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+.ProseMirror ::selection { background-color: var(--selection); }
+
+/* Placeholder */
+.ProseMirror .is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-faint);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
