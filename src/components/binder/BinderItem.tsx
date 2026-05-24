@@ -1,6 +1,9 @@
 "use client";
 
-import { ChevronRight, FileText, Folder, FolderOpen, MoreHorizontal } from "lucide-react";
+import {
+  ChevronRight, FileText, Folder, FolderOpen, FolderArchive,
+  MoreHorizontal, EyeOff, Eye,
+} from "lucide-react";
 import { BinderNode } from "@/lib/project/schema";
 import { cn } from "@/lib/utils";
 import { useProjectStore } from "@/store/project";
@@ -9,35 +12,52 @@ import { useState, useRef, useEffect } from "react";
 interface BinderItemProps {
   node: BinderNode;
   depth?: number;
-  statusColor?: string;
-  labelColor?: string;
 }
 
-export function BinderItem({ node, depth = 0, statusColor, labelColor }: BinderItemProps) {
-  const { selectedNodeId, setSelectedNode, toggleExpanded, project, save } = useProjectStore();
+export function BinderItem({ node, depth = 0 }: BinderItemProps) {
+  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, project, save } =
+    useProjectStore();
   const [renaming, setRenaming] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [draft, setDraft] = useState(node.title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isSelected = selectedNodeId === node.id;
   const isFolder = node.type === "folder";
+  const isInactive = node.isActive === false;
+  const isArchive = node.role === "archive";
 
   useEffect(() => {
     if (renaming) inputRef.current?.select();
   }, [renaming]);
 
-  const handleClick = () => {
-    if (isFolder) {
-      toggleExpanded(node.id);
-    } else {
-      setSelectedNode(node.id);
-    }
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
+
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleExpanded(node.id);
+  };
+
+  const handleRowClick = () => {
+    if (renaming) return;
+    setSelectedNode(node.id);
+    // Also expand folder on click
+    if (isFolder && !node.isExpanded) toggleExpanded(node.id);
   };
 
   const commitRename = async () => {
-    if (!project) return;
     setRenaming(false);
     if (draft.trim() && draft !== node.title) {
-      // update binder in store
       const updateNode = (nodes: BinderNode[]): BinderNode[] =>
         nodes.map((n) => {
           if (n.id === node.id) return { ...n, title: draft.trim() };
@@ -51,44 +71,77 @@ export function BinderItem({ node, depth = 0, statusColor, labelColor }: BinderI
     }
   };
 
+  const handleToggleActive = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    toggleActive(node.id);
+    await save();
+  };
+
   const nodeMeta = project?.metadata[node.id];
-  const status = nodeMeta?.status
-    ? project?.statuses.find((s) => s.id === nodeMeta.status)
-    : undefined;
   const label = nodeMeta?.label
     ? project?.labels.find((l) => l.id === nodeMeta.label)
     : undefined;
+  const status = nodeMeta?.status
+    ? project?.statuses.find((s) => s.id === nodeMeta.status)
+    : undefined;
+
+  const FolderIcon = isArchive ? FolderArchive : node.isExpanded ? FolderOpen : Folder;
 
   return (
     <li>
       <div
         className={cn(
-          "group flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer text-sm select-none",
-          isSelected && !isFolder
-            ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-            : "hover:bg-[var(--bg-panel)] text-[var(--text)]"
+          "group flex items-center gap-1 rounded-md cursor-pointer text-sm select-none relative",
+          isSelected
+            ? isFolder
+              ? "bg-[var(--bg-panel)]"
+              : "bg-[var(--accent)] text-[var(--accent-fg)]"
+            : "hover:bg-[var(--bg-panel)]",
+          isInactive && "opacity-40"
         )}
-        style={{ paddingLeft: `${8 + depth * 16}px` }}
-        onClick={handleClick}
+        style={{
+          paddingLeft: `${6 + depth * 16}px`,
+          paddingRight: 6,
+          paddingTop: 4,
+          paddingBottom: 4,
+          borderLeft: isSelected && isFolder
+            ? "2px solid var(--accent)"
+            : "2px solid transparent",
+          color: isSelected && !isFolder ? "var(--accent-fg)" : "var(--text)",
+        }}
+        onClick={handleRowClick}
         onDoubleClick={() => setRenaming(true)}
       >
+        {/* Chevron (folders only) */}
         {isFolder ? (
-          <>
+          <button
+            onClick={handleChevronClick}
+            className="shrink-0 p-0.5 rounded hover:bg-black/10 transition-colors"
+            style={{ color: "inherit" }}
+          >
             <ChevronRight
               size={12}
-              className="shrink-0 transition-transform"
+              className="transition-transform"
               style={{ transform: node.isExpanded ? "rotate(90deg)" : undefined }}
             />
-            {node.isExpanded ? (
-              <FolderOpen size={14} className="shrink-0" />
-            ) : (
-              <Folder size={14} className="shrink-0" />
-            )}
-          </>
+          </button>
         ) : (
-          <FileText size={14} className="shrink-0 ml-[16px]" />
+          <span className="shrink-0 w-5" />
         )}
 
+        {/* Icon */}
+        {isFolder ? (
+          <FolderIcon
+            size={14}
+            className="shrink-0"
+            style={{ color: isArchive ? "var(--text-faint)" : isSelected ? undefined : "var(--accent)" }}
+          />
+        ) : (
+          <FileText size={14} className="shrink-0" style={{ color: isSelected ? undefined : "var(--text-muted)" }} />
+        )}
+
+        {/* Title / rename input */}
         {renaming ? (
           <input
             ref={inputRef}
@@ -99,43 +152,66 @@ export function BinderItem({ node, depth = 0, statusColor, labelColor }: BinderI
               if (e.key === "Enter") commitRename();
               if (e.key === "Escape") { setRenaming(false); setDraft(node.title); }
             }}
-            className="flex-1 bg-transparent outline-none border-b border-[var(--accent)] text-[var(--text)]"
+            className="flex-1 bg-transparent outline-none border-b text-sm min-w-0"
+            style={{ borderColor: "var(--accent)", color: "var(--text)" }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="flex-1 truncate">{node.title}</span>
+          <span className="flex-1 truncate text-sm">{node.title}</span>
         )}
 
         {/* Label dot */}
         {label && (
-          <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: label.color }}
-          />
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
         )}
-
         {/* Status dot */}
         {status && (
-          <span
-            className="w-1.5 h-1.5 rounded-full shrink-0 opacity-70"
-            style={{ backgroundColor: status.color }}
-          />
+          <span className="w-1.5 h-1.5 rounded-full shrink-0 opacity-60" style={{ backgroundColor: status.color }} />
         )}
 
-        <button
-          className={cn(
-            "opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-black/10 transition-opacity shrink-0",
-            isSelected && !isFolder && "hover:bg-white/20"
+        {/* Context menu trigger */}
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            className={cn(
+              "opacity-0 group-hover:opacity-100 p-0.5 rounded transition-opacity",
+              isSelected && !isFolder ? "hover:bg-white/20" : "hover:bg-black/10",
+              showMenu && "opacity-100"
+            )}
+            onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
+          >
+            <MoreHorizontal size={12} />
+          </button>
+
+          {showMenu && (
+            <div
+              className="absolute right-0 top-full mt-1 rounded-lg py-1 w-44 z-30"
+              style={{
+                backgroundColor: "var(--bg-elevated)",
+                border: "1px solid var(--border)",
+                boxShadow: "var(--shadow-md)",
+              }}
+            >
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-[var(--bg-panel)] transition-colors"
+                style={{ color: "var(--text)" }}
+                onClick={(e) => { e.stopPropagation(); setShowMenu(false); setRenaming(true); }}
+              >
+                Rename
+              </button>
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-[var(--bg-panel)] transition-colors"
+                style={{ color: "var(--text)" }}
+                onClick={handleToggleActive}
+              >
+                {isInactive ? <Eye size={12} /> : <EyeOff size={12} />}
+                {isInactive ? "Mark active" : "Mark inactive"}
+              </button>
+            </div>
           )}
-          onClick={(e) => {
-            e.stopPropagation();
-            setRenaming(true);
-          }}
-        >
-          <MoreHorizontal size={12} />
-        </button>
+        </div>
       </div>
 
+      {/* Children */}
       {isFolder && node.isExpanded && node.children && node.children.length > 0 && (
         <ul>
           {node.children.map((child) => (

@@ -1,0 +1,199 @@
+"use client";
+
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import CharacterCount from "@tiptap/extension-character-count";
+import Typography from "@tiptap/extension-typography";
+import Highlight from "@tiptap/extension-highlight";
+import { BinderNode, collectDocuments, findNode } from "@/lib/project/schema";
+import { useProjectStore } from "@/store/project";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { Layers } from "lucide-react";
+
+// One TipTap segment for a single document inside the Scrivenings view
+function DocumentSegment({
+  node,
+  projectId,
+  isLast,
+  onWordCount,
+}: {
+  node: BinderNode;
+  projectId: string;
+  isLast: boolean;
+  onWordCount: (id: string, wc: number) => void;
+}) {
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSaved = useRef("");
+
+  const save = useCallback(
+    async (html: string) => {
+      if (!node.driveId || html === lastSaved.current) return;
+      lastSaved.current = html;
+      try {
+        await fetch(`/api/projects/${projectId}/documents/${node.driveId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: html }),
+        });
+      } catch {/* silent */ }
+    },
+    [node.driveId, projectId]
+  );
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Placeholder.configure({ placeholder: "Begin writing…" }),
+      CharacterCount,
+      Typography,
+      Highlight.configure({ multicolor: false }),
+    ],
+    editorProps: { attributes: { class: "focus:outline-none" } },
+    onUpdate({ editor }) {
+      onWordCount(node.id, editor.storage.characterCount.words());
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => save(editor.getHTML()), 1500);
+    },
+  });
+
+  useEffect(() => {
+    if (!editor || !node.driveId) return;
+    let cancelled = false;
+    fetch(`/api/projects/${projectId}/documents/${node.driveId}`)
+      .then((r) => r.json())
+      .then(({ content }) => {
+        if (!cancelled && content) {
+          editor.commands.setContent(content);
+          lastSaved.current = content;
+          onWordCount(node.id, editor.storage.characterCount.words());
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.driveId, editor]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (editor) save(editor.getHTML());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]);
+
+  return (
+    <div className="scrivenings-segment">
+      {/* Scene title divider */}
+      <div
+        className="flex items-center gap-3 px-16 py-4 select-none"
+        style={{ maxWidth: 720, margin: "0 auto" }}
+      >
+        <span
+          className="text-xs font-semibold uppercase tracking-widest"
+          style={{ color: "var(--text-faint)" }}
+        >
+          {node.title}
+        </span>
+        <div className="flex-1 h-px" style={{ backgroundColor: "var(--border-soft)" }} />
+      </div>
+
+      {/* Editor */}
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <EditorContent editor={editor} />
+      </div>
+
+      {/* Inter-segment gap (not after last) */}
+      {!isLast && (
+        <div
+          className="mx-auto my-6"
+          style={{
+            maxWidth: 720,
+            height: 1,
+            backgroundColor: "var(--border-soft)",
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Main Scrivenings view ──────────────────────────────────────────────────
+interface ScriveningsViewProps {
+  folderId: string;
+  projectId: string;
+}
+
+export function ScriveningsView({ folderId, projectId }: ScriveningsViewProps) {
+  const { project } = useProjectStore();
+  const [wordCounts, setWordCounts] = useState<Record<string, number>>({});
+
+  if (!project) return null;
+
+  const folder = findNode(project.binder, folderId);
+  const docs = folder ? collectDocuments(folder.children ?? []) : [];
+
+  const handleWordCount = (id: string, wc: number) =>
+    setWordCounts((prev) => ({ ...prev, [id]: wc }));
+
+  const totalWords = Object.values(wordCounts).reduce((a, b) => a + b, 0);
+
+  if (docs.length === 0) {
+    return (
+      <div
+        className="flex-1 flex flex-col items-center justify-center gap-2"
+        style={{ backgroundColor: "var(--bg)" }}
+      >
+        <Layers size={36} strokeWidth={1} style={{ color: "var(--text-faint)" }} />
+        <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+          No documents in <strong>{folder?.title}</strong> yet.
+        </p>
+        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          Add documents to this folder in the binder.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex-1 flex flex-col h-full overflow-hidden"
+      style={{ backgroundColor: "var(--bg)" }}
+    >
+      {/* Scrivenings header */}
+      <div
+        className="shrink-0 flex items-center justify-between px-8 py-2 border-b"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-sidebar)" }}
+      >
+        <div className="flex items-center gap-2">
+          <Layers size={14} style={{ color: "var(--accent)" }} />
+          <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+            {folder?.title}
+          </span>
+          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+            — {docs.length} {docs.length === 1 ? "scene" : "scenes"}
+          </span>
+        </div>
+        {totalWords > 0 && (
+          <span className="text-xs tabular-nums" style={{ color: "var(--text-faint)" }}>
+            {totalWords.toLocaleString()} words
+          </span>
+        )}
+      </div>
+
+      {/* Scrolling content */}
+      <div className="flex-1 overflow-y-auto py-6">
+        {docs.map((doc, i) => (
+          <DocumentSegment
+            key={doc.id}
+            node={doc}
+            projectId={projectId}
+            isLast={i === docs.length - 1}
+            onWordCount={handleWordCount}
+          />
+        ))}
+        <div className="h-24" /> {/* bottom breathing room */}
+      </div>
+    </div>
+  );
+}
