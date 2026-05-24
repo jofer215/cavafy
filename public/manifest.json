@@ -1,0 +1,25 @@
+{
+  "name": "Cavafy",
+  "short_name": "Cavafy",
+  "description": "Open-source novel writing app powered by Google Drive",
+  "start_url": "/projects",
+  "display": "standalone",
+  "background_color": "#faf8f4",
+  "theme_color": "#faf8f4",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "writing"],
+  "lang": "en"
+}
