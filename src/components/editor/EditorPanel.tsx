@@ -7,7 +7,7 @@ import { ScriveningsView } from "./ScriveningsView";
 import { BookOpen } from "lucide-react";
 
 export function EditorPanel() {
-  const { project, selectedNodeId, viewMode, updateMetadata, save } = useProjectStore();
+  const { project, selectedNodeId, viewMode, updateMetadata } = useProjectStore();
 
   if (!project) return null;
 
@@ -47,7 +47,7 @@ export function EditorPanel() {
         _wordCount: wc,
       },
     });
-    save();
+    // word count is saved piggyback on the next content auto-save (1.5s debounce in TipTapEditor)
   };
 
   if (!node.driveId) {

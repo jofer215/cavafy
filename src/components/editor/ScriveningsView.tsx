@@ -69,10 +69,9 @@ function DocumentSegment({
           onWordCount(node.id, editor.storage.characterCount.words());
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load document:", e));
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [node.driveId, editor]);
+  }, [node.driveId, projectId, editor]);
 
   useEffect(() => {
     return () => {

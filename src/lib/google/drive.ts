@@ -17,17 +17,15 @@ export async function getOrCreateCavafyRoot(accessToken: string): Promise<string
     fields: "files(id, name)",
     spaces: "drive",
   });
-  if (res.data.files && res.data.files.length > 0) {
-    return res.data.files[0].id!;
-  }
+  const existingId = res.data.files?.[0]?.id;
+  if (existingId) return existingId;
+
   const folder = await drive.files.create({
-    requestBody: {
-      name: CAVAFY_ROOT,
-      mimeType: "application/vnd.google-apps.folder",
-    },
+    requestBody: { name: CAVAFY_ROOT, mimeType: "application/vnd.google-apps.folder" },
     fields: "id",
   });
-  return folder.data.id!;
+  if (!folder.data.id) throw new Error("Failed to create Cavafy root folder");
+  return folder.data.id;
 }
 
 export async function listProjects(accessToken: string): Promise<ProjectData[]> {
@@ -44,18 +42,18 @@ export async function listProjects(accessToken: string): Promise<ProjectData[]> 
   const projects: ProjectData[] = [];
 
   for (const folder of folders) {
+    if (!folder.id) continue;
     const metaRes = await drive.files.list({
       q: `'${folder.id}' in parents and name='${PROJECT_META_FILENAME}' and trashed=false`,
       fields: "files(id)",
     });
-    if (metaRes.data.files && metaRes.data.files.length > 0) {
-      const metaId = metaRes.data.files[0].id!;
-      const content = await getFileContent(accessToken, metaId);
-      try {
-        projects.push(JSON.parse(content) as ProjectData);
-      } catch {
-        // corrupted meta, skip
-      }
+    const metaId = metaRes.data.files?.[0]?.id;
+    if (!metaId) continue;
+    const content = await getFileContent(accessToken, metaId);
+    try {
+      projects.push(JSON.parse(content) as ProjectData);
+    } catch {
+      // corrupted meta, skip
     }
   }
   return projects;
@@ -73,7 +71,8 @@ export async function createProject(accessToken: string, name: string): Promise<
     },
     fields: "id",
   });
-  const folderId = folderRes.data.id!;
+  if (!folderRes.data.id) throw new Error("Failed to create project folder");
+  const folderId = folderRes.data.id;
 
   const projectId = crypto.randomUUID();
   const projectData = createDefaultProject(projectId, name, folderId);
@@ -96,12 +95,10 @@ export async function saveProjectMeta(
 
   const content = JSON.stringify(data, null, 2);
   const media = { mimeType: "application/json", body: content };
+  const existingId = existing.data.files?.[0]?.id;
 
-  if (existing.data.files && existing.data.files.length > 0) {
-    await drive.files.update({
-      fileId: existing.data.files[0].id!,
-      media,
-    });
+  if (existingId) {
+    await drive.files.update({ fileId: existingId, media });
   } else {
     await drive.files.create({
       requestBody: {
@@ -134,7 +131,8 @@ export async function createDocument(
     },
     fields: "id",
   });
-  return res.data.id!;
+  if (!res.data.id) throw new Error("Failed to create document");
+  return res.data.id;
 }
 
 export async function createFolder(
@@ -151,7 +149,8 @@ export async function createFolder(
     },
     fields: "id",
   });
-  return res.data.id!;
+  if (!res.data.id) throw new Error("Failed to create folder");
+  return res.data.id;
 }
 
 export async function getFileContent(accessToken: string, fileId: string): Promise<string> {
@@ -170,10 +169,7 @@ export async function saveFileContent(
   mimeType = "text/plain"
 ): Promise<void> {
   const drive = getDriveClient(accessToken);
-  await drive.files.update({
-    fileId,
-    media: { mimeType, body: content },
-  });
+  await drive.files.update({ fileId, media: { mimeType, body: content } });
 }
 
 export async function renameFile(
@@ -182,16 +178,10 @@ export async function renameFile(
   newName: string
 ): Promise<void> {
   const drive = getDriveClient(accessToken);
-  await drive.files.update({
-    fileId,
-    requestBody: { name: newName },
-  });
+  await drive.files.update({ fileId, requestBody: { name: newName } });
 }
 
 export async function trashFile(accessToken: string, fileId: string): Promise<void> {
   const drive = getDriveClient(accessToken);
-  await drive.files.update({
-    fileId,
-    requestBody: { trashed: true },
-  });
+  await drive.files.update({ fileId, requestBody: { trashed: true } });
 }
