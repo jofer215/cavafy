@@ -7,11 +7,12 @@ import { Binder } from "@/components/binder/Binder";
 import { EditorPanel } from "@/components/editor/EditorPanel";
 import { Inspector } from "@/components/inspector/Inspector";
 import { PlotGridView } from "@/components/plot-grid/PlotGrid";
-import { BookOpen, ChevronLeft, PanelRight, Grid3x3, FileText } from "lucide-react";
+import { CorkboardView } from "@/components/corkboard/Corkboard";
+import { BookOpen, ChevronLeft, PanelRight, Grid3x3, FileText, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export type WorkspaceView = "editor" | "plot-grid";
+export type WorkspaceView = "editor" | "corkboard" | "plot-grid";
 
 interface WorkspaceShellProps {
   initialProject: ProjectData;
@@ -28,8 +29,9 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
   }, [initialProject, setProject]);
 
   const navItems: { view: WorkspaceView; icon: React.ReactNode; label: string }[] = [
-    { view: "editor",    icon: <FileText size={14} />,   label: "Editor"    },
-    { view: "plot-grid", icon: <Grid3x3 size={14} />,    label: "Plot Grid" },
+    { view: "editor",    icon: <FileText size={14} />,    label: "Editor"    },
+    { view: "corkboard", icon: <LayoutGrid size={14} />,  label: "Corkboard" },
+    { view: "plot-grid", icon: <Grid3x3 size={14} />,     label: "Plot Grid" },
   ];
 
   return (
@@ -76,7 +78,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
         </nav>
 
         <div className="flex items-center gap-2">
-          {activeView === "editor" && (
+          {(activeView === "editor" || activeView === "corkboard") && (
             <button
               onClick={() => setShowInspector((v) => !v)}
               className="p-1.5 rounded hover:bg-[var(--bg-panel)] transition-colors"
@@ -95,6 +97,13 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
           <>
             <Binder />
             <EditorPanel />
+            {showInspector && <Inspector />}
+          </>
+        )}
+        {activeView === "corkboard" && (
+          <>
+            <Binder />
+            <CorkboardView />
             {showInspector && <Inspector />}
           </>
         )}

@@ -19,6 +19,7 @@ interface ProjectStore {
   updateBinder: (binder: BinderNode[]) => void;
   toggleExpanded: (id: string) => void;
   toggleActive: (id: string) => void;
+  reorderChildren: (parentId: string | null, fromIndex: number, toIndex: number) => void;
 
   updateMetadata: (nodeId: string, meta: Partial<DocumentMetadata>) => void;
 
@@ -82,6 +83,26 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         ? { project: { ...s.project, binder: toggleNodeActive(s.project.binder, id) } }
         : {}
     ),
+
+  reorderChildren: (parentId, fromIndex, toIndex) =>
+    set((s) => {
+      if (!s.project || fromIndex === toIndex) return {};
+      const move = (arr: BinderNode[]): BinderNode[] => {
+        const next = [...arr];
+        const [item] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, item);
+        return next;
+      };
+      const reorder = (nodes: BinderNode[]): BinderNode[] => {
+        if (parentId === null) return move(nodes);
+        return nodes.map((n) => {
+          if (n.id === parentId && n.children) return { ...n, children: move(n.children) };
+          if (n.children) return { ...n, children: reorder(n.children) };
+          return n;
+        });
+      };
+      return { project: { ...s.project, binder: reorder(s.project.binder) } };
+    }),
 
   updateMetadata: (nodeId, meta) =>
     set((s) => {

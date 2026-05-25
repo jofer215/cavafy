@@ -105,7 +105,9 @@ export function BinderItem({ node, depth = 0 }: BinderItemProps) {
           paddingBottom: 4,
           borderLeft: isSelected && isFolder
             ? "2px solid var(--accent)"
-            : "2px solid transparent",
+            : !isSelected && label
+              ? `2px solid ${label.color}`
+              : "2px solid transparent",
           color: isSelected && !isFolder ? "var(--accent-fg)" : "var(--text)",
         }}
         onClick={handleRowClick}
