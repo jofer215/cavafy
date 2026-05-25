@@ -15,7 +15,7 @@ interface BinderItemProps {
 }
 
 export function BinderItem({ node, depth = 0 }: BinderItemProps) {
-  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, project, save } =
+  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, updateBinder, project, save } =
     useProjectStore();
   const [renaming, setRenaming] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -57,16 +57,14 @@ export function BinderItem({ node, depth = 0 }: BinderItemProps) {
 
   const commitRename = async () => {
     setRenaming(false);
-    if (draft.trim() && draft !== node.title) {
-      const updateNode = (nodes: BinderNode[]): BinderNode[] =>
+    if (draft.trim() && draft !== node.title && project) {
+      const renameNode = (nodes: BinderNode[]): BinderNode[] =>
         nodes.map((n) => {
           if (n.id === node.id) return { ...n, title: draft.trim() };
-          if (n.children) return { ...n, children: updateNode(n.children) };
+          if (n.children) return { ...n, children: renameNode(n.children) };
           return n;
         });
-      useProjectStore.setState((s) =>
-        s.project ? { project: { ...s.project, binder: updateNode(s.project.binder) } } : {}
-      );
+      updateBinder(renameNode(project.binder));
       await save();
     }
   };

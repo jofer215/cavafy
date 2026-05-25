@@ -1,7 +1,7 @@
 "use client";
 
 import { useProjectStore } from "@/store/project";
-import { useReferenceIndex } from "@/hooks/useReferenceIndex";
+import { useReferenceIndex, type ReferenceEntry } from "@/hooks/useReferenceIndex";
 import { TagCategory } from "@/lib/project/schema";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -24,7 +24,7 @@ function TagSection({
   onSelect,
 }: {
   cat: TagCategory;
-  entries: Record<string, import("@/hooks/useReferenceIndex").ReferenceEntry[]>;
+  entries: Record<string, ReferenceEntry[]>;
   onSelect: (nodeId: string) => void;
 }) {
   const { label, color } = CAT_META[cat];

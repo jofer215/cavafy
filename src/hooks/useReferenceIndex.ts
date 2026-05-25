@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useProjectStore } from "@/store/project";
-import { collectDocuments, TagCategory, findNode } from "@/lib/project/schema";
+import { collectDocuments, TagCategory } from "@/lib/project/schema";
 
 export interface ReferenceEntry {
   nodeId: string;
@@ -27,9 +27,7 @@ export function useReferenceIndex(): ReferenceIndex {
     for (const doc of docs) {
       const meta = project.metadata[doc.id];
       if (!meta?.tags) continue;
-      const node = findNode(project.binder, doc.id);
-      if (!node) continue;
-      const entry: ReferenceEntry = { nodeId: doc.id, nodeTitle: node.title };
+      const entry: ReferenceEntry = { nodeId: doc.id, nodeTitle: doc.title };
       for (const cat of CATEGORIES) {
         for (const val of meta.tags[cat] ?? []) {
           const key = val.toLowerCase().trim();

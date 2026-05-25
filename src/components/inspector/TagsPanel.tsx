@@ -44,21 +44,24 @@ function TagRow({
   placeholder: string;
   values: string[];
 }) {
-  const { updateMetadata, save } = useProjectStore();
+  const { project, updateMetadata, save } = useProjectStore();
   const [input, setInput] = useState("");
   const [adding, setAdding] = useState(false);
+
+  const mergeTags = (next: string[]): DocumentTags => ({
+    ...(project?.metadata[nodeId]?.tags ?? {}),
+    [cat]: next,
+  });
 
   const commit = async (raw: string) => {
     const val = raw.trim();
     if (!val || values.map((v) => v.toLowerCase()).includes(val.toLowerCase())) return;
-    const next = [...values, val];
-    updateMetadata(nodeId, { tags: { [cat]: next } as DocumentTags });
+    updateMetadata(nodeId, { tags: mergeTags([...values, val]) });
     await save();
   };
 
   const remove = async (val: string) => {
-    const next = values.filter((v) => v !== val);
-    updateMetadata(nodeId, { tags: { [cat]: next } as DocumentTags });
+    updateMetadata(nodeId, { tags: mergeTags(values.filter((v) => v !== val)) });
     await save();
   };
 

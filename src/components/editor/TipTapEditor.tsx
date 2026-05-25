@@ -72,10 +72,9 @@ export function TipTapEditor({ docId, projectId, title, onWordCountChange }: Tip
           onWordCountChange?.(wc);
         }
       })
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load document:", e));
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docId, editor]);
+  }, [docId, projectId, editor]);
 
   // Cleanup timer on unmount
   useEffect(() => {
