@@ -10,6 +10,7 @@ import { BinderNode, collectDocuments, findNode } from "@/lib/project/schema";
 import { useProjectStore } from "@/store/project";
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { Layers } from "lucide-react";
+import { docCache, pendingQueue } from "@/lib/cache/db";
 
 // One TipTap segment for a single document inside Union view
 function DocumentSegment({
@@ -30,14 +31,13 @@ function DocumentSegment({
     async (html: string) => {
       if (!node.driveId || html === lastSaved.current) return;
       lastSaved.current = html;
+      docCache.set({ driveId: node.driveId, projectId, content: html, savedAt: new Date().toISOString() });
+      const url = `/api/projects/${projectId}/documents/${node.driveId}`;
       try {
-        await fetch(`/api/projects/${projectId}/documents/${node.driveId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: html }),
-        });
-      } catch (e) {
-        console.error("Auto-save failed:", e);
+        await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: html }) });
+      } catch {
+        pendingQueue.push({ url, method: "PUT", body: JSON.stringify({ content: html }), createdAt: new Date().toISOString() });
+        window.dispatchEvent(new CustomEvent("cavafy:pending-writes-changed"));
       }
     },
     [node.driveId, projectId]
@@ -64,16 +64,25 @@ function DocumentSegment({
   useEffect(() => {
     if (!editor || !node.driveId) return;
     let cancelled = false;
+
+    const applyContent = (content: string) => {
+      if (cancelled || !content) return;
+      editor.commands.setContent(content);
+      lastSaved.current = content;
+      onWordCount(node.id, editor.storage.characterCount.words());
+    };
+
     fetch(`/api/projects/${projectId}/documents/${node.driveId}`)
       .then((r) => r.json())
       .then(({ content }) => {
-        if (!cancelled && content) {
-          editor.commands.setContent(content);
-          lastSaved.current = content;
-          onWordCount(node.id, editor.storage.characterCount.words());
-        }
+        applyContent(content);
+        if (content) docCache.set({ driveId: node.driveId!, projectId, content, savedAt: new Date().toISOString() });
       })
-      .catch((e) => console.error("Failed to load document:", e));
+      .catch(async () => {
+        const cached = await docCache.get(node.driveId!);
+        if (cached) applyContent(cached.content);
+      });
+
     return () => { cancelled = true; };
   }, [node.driveId, projectId, editor]);
 

@@ -21,9 +21,27 @@ Write from anywhere — Mac, iPad, Linux, or any browser — with your work alwa
 
 ## Roadmap
 
-- **Phase 2 (in progress)**: Snapshots, Collections, Split screen, Document merge, Word count goals
-- **Phase 3**: Distraction-free mode, Dialogue Focus, Bookmarks, Annotations
-- **Phase 4**: Compile & Export (PDF/DOCX/ePub), ProWritingAid integration, Templates
+### Phase 2 — Organization & Views ✅ Complete
+- Corkboard, Outliner, Plot Grid
+- Label color-coding in binder
+- Union view (continuous multi-document scroll)
+- Snapshots — named point-in-time copies of any document, restorable from Inspector
+- Collections — named saved groups of scenes, open together in Union view
+- Daily word count goals + 18-week streak calendar
+
+### Phase 3 — Writing Experience ← Current
+- [ ] Distraction-free mode — chrome fades as you type, returns on mouse move
+- [ ] Offline support — app shell + document read cache + write queue
+- [ ] Document merge — right-click folder → merge children into one doc
+- [ ] Split screen — two editor panels side by side
+- [ ] Dialogue Focus — fade non-speech text to gray
+- [ ] Bookmarks and annotations
+
+### Phase 4 — Power Features
+- [ ] Compile & Export → PDF, DOCX, ePub
+- [ ] Read-aloud (text-to-speech)
+- [ ] ProWritingAid integration
+- [ ] Templates root folder
 
 ---
 
@@ -164,9 +182,12 @@ My Drive/
   Cavafy/
     [Your Project Name]/
       .cavafy-project.json    <- binder tree, metadata, labels, statuses, plot grid
-      Scene 1.html            <- TipTap HTML per document
-      Scene 2.html
-      ...
+      Manuscript/             <- mirrors binder folder structure
+        Chapter 1/
+          Scene 1             <- native Google Doc (editable in Google Docs)
+          Scene 2
+      Characters/
+      Research/
 ```
 
 ---
