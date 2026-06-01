@@ -16,7 +16,7 @@
   --accent-fg:    #ffffff;
   --selection:    #d4e8ef;
 
-  --font-prose: "Georgia", "Times New Roman", serif;
+  --font-prose: var(--font-open-sans), "Open Sans", ui-sans-serif, sans-serif;
   --font-ui: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
   --radius: 0.5rem;

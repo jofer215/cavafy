@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Open_Sans } from "next/font/google";
 import { auth } from "@/auth";
 import { SessionProvider } from "@/components/auth/SessionProvider";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const openSans = Open_Sans({ variable: "--font-open-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Cavafy",
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${openSans.variable} h-full`}>
       <body className="h-full antialiased">
         <SessionProvider session={session}>
           {children}
