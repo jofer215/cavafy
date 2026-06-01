@@ -7,6 +7,7 @@ import { Binder } from "@/components/binder/Binder";
 import { EditorPanel } from "@/components/editor/EditorPanel";
 import { Inspector } from "@/components/inspector/Inspector";
 import { WordCountWidget } from "./WordCountWidget";
+import { OfflineBanner } from "./OfflineBanner";
 import { PlotGridView } from "@/components/plot-grid/PlotGrid";
 import { CorkboardView } from "@/components/corkboard/Corkboard";
 import { OutlinerView } from "@/components/outliner/Outliner";
@@ -94,6 +95,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
         </nav>
 
         <div className="flex items-center gap-2">
+          <OfflineBanner />
           <WordCountWidget />
           {(activeView === "editor" || activeView === "corkboard") && (
             <button

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, Collection, getTotalWordCount } from "@/lib/project/schema";
+import { pendingQueue } from "@/lib/cache/db";
 
 export type ViewMode = "single" | "union";
 
@@ -281,14 +282,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     get().recordWordCount();
     const { project } = get();
     if (!project) return;
+
+    // Always mirror to localStorage so the binder is readable offline
     try {
-      await fetch(`/api/projects/${project.id}`, {
+      localStorage.setItem(`cavafy:project:${project.id}`, JSON.stringify(project));
+    } catch { /* storage quota — not fatal */ }
+
+    const url = `/api/projects/${project.id}`;
+    const body = JSON.stringify(project);
+    try {
+      await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(project),
+        body,
       });
-    } catch (e) {
-      console.error("Failed to save project:", e);
+    } catch {
+      // Offline — queue for sync
+      pendingQueue.push({ url, method: "PUT", body, createdAt: new Date().toISOString() });
+      window.dispatchEvent(new CustomEvent("cavafy:pending-writes-changed"));
     }
   },
 }));

@@ -7,6 +7,7 @@ import CharacterCount from "@tiptap/extension-character-count";
 import Typography from "@tiptap/extension-typography";
 import Highlight from "@tiptap/extension-highlight";
 import { useEffect, useCallback, useRef, useMemo } from "react";
+import { docCache, pendingQueue } from "@/lib/cache/db";
 
 interface TipTapEditorProps {
   docId: string;
@@ -23,14 +24,19 @@ export function TipTapEditor({ docId, projectId, title, onWordCountChange }: Tip
     async (html: string) => {
       if (html === lastSavedContent.current) return;
       lastSavedContent.current = html;
+      // Always update local cache immediately so offline reads are fresh
+      docCache.set({ driveId: docId, projectId, content: html, savedAt: new Date().toISOString() });
+      const url = `/api/projects/${projectId}/documents/${docId}`;
       try {
-        await fetch(`/api/projects/${projectId}/documents/${docId}`, {
+        await fetch(url, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: html }),
         });
-      } catch (e) {
-        console.error("Auto-save failed:", e);
+      } catch {
+        // Offline — queue for sync when back online
+        pendingQueue.push({ url, method: "PUT", body: JSON.stringify({ content: html }), createdAt: new Date().toISOString() });
+        window.dispatchEvent(new CustomEvent("cavafy:pending-writes-changed"));
       }
     },
     [docId, projectId]
@@ -61,21 +67,31 @@ export function TipTapEditor({ docId, projectId, title, onWordCountChange }: Tip
     },
   });
 
-  // Load content when docId changes
+  // Load content — try Drive first, fall back to IndexedDB cache
   useEffect(() => {
     if (!editor || !docId) return;
     let cancelled = false;
+
+    const applyContent = (content: string) => {
+      if (cancelled || !content) return;
+      editor.commands.setContent(content);
+      lastSavedContent.current = content;
+      onWordCountChange?.(editor.storage.characterCount.words());
+    };
+
     fetch(`/api/projects/${projectId}/documents/${docId}`)
       .then((r) => r.json())
       .then(({ content }) => {
-        if (!cancelled && content) {
-          editor.commands.setContent(content);
-          lastSavedContent.current = content;
-          const wc = editor.storage.characterCount.words();
-          onWordCountChange?.(wc);
-        }
+        applyContent(content);
+        // Freshen the cache on every successful load
+        if (content) docCache.set({ driveId: docId, projectId, content, savedAt: new Date().toISOString() });
       })
-      .catch((e) => console.error("Failed to load document:", e));
+      .catch(async () => {
+        const cached = await docCache.get(docId);
+        if (cached) applyContent(cached.content);
+        else console.warn("Document not in cache and Drive unreachable:", docId);
+      });
+
     return () => { cancelled = true; };
   }, [docId, projectId, editor]);
 
