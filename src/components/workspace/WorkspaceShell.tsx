@@ -10,11 +10,12 @@ import { WordCountWidget } from "./WordCountWidget";
 import { PlotGridView } from "@/components/plot-grid/PlotGrid";
 import { CorkboardView } from "@/components/corkboard/Corkboard";
 import { OutlinerView } from "@/components/outliner/Outliner";
-import { BookOpen, ChevronLeft, PanelLeft, PanelRight, Grid3x3, FileText, LayoutGrid, Table2 } from "lucide-react";
+import { CollectionsView } from "@/components/collections/CollectionsView";
+import { BookOpen, ChevronLeft, PanelLeft, PanelRight, Grid3x3, FileText, LayoutGrid, Table2, Layers } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export type WorkspaceView = "editor" | "corkboard" | "outliner" | "plot-grid";
+export type WorkspaceView = "editor" | "corkboard" | "outliner" | "plot-grid" | "collections";
 
 interface WorkspaceShellProps {
   initialProject: ProjectData;
@@ -32,10 +33,11 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
   }, [initialProject, setProject]);
 
   const navItems: { view: WorkspaceView; icon: React.ReactNode; label: string }[] = [
-    { view: "editor",    icon: <FileText size={14} />,    label: "Editor"    },
-    { view: "corkboard", icon: <LayoutGrid size={14} />,  label: "Corkboard" },
-    { view: "outliner",  icon: <Table2 size={14} />,      label: "Outliner"  },
-    { view: "plot-grid", icon: <Grid3x3 size={14} />,     label: "Plot Grid" },
+    { view: "editor",      icon: <FileText size={14} />,    label: "Editor"      },
+    { view: "corkboard",   icon: <LayoutGrid size={14} />,  label: "Corkboard"   },
+    { view: "outliner",    icon: <Table2 size={14} />,      label: "Outliner"    },
+    { view: "plot-grid",   icon: <Grid3x3 size={14} />,     label: "Plot Grid"   },
+    { view: "collections", icon: <Layers size={14} />,      label: "Collections" },
   ];
 
   return (
@@ -55,7 +57,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
             Projects
           </Link>
           <span style={{ color: "var(--border)" }}>|</span>
-          {(activeView === "editor" || activeView === "corkboard") && (
+          {(activeView === "editor" || activeView === "corkboard" || activeView === "collections") && (
             <button
               onClick={() => setShowBinder((v) => !v)}
               className="p-1.5 rounded hover:bg-[var(--bg-panel)] transition-colors"
@@ -124,6 +126,12 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
         )}
         {activeView === "outliner" && <OutlinerView />}
         {activeView === "plot-grid" && <PlotGridView />}
+        {activeView === "collections" && (
+          <>
+            {showBinder && <Binder />}
+            <CollectionsView projectId={initialProject.id} />
+          </>
+        )}
       </div>
     </div>
   );

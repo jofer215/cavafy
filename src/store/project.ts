@@ -1,9 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, getTotalWordCount } from "@/lib/project/schema";
+import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, Collection, getTotalWordCount } from "@/lib/project/schema";
 
-export type ViewMode = "single" | "scrivenings";
+export type ViewMode = "single" | "union";
 
 interface ProjectStore {
   project: ProjectData | null;
@@ -27,6 +27,13 @@ interface ProjectStore {
   addPlotLine: (name: string, color: string) => void;
   removePlotLine: (id: string) => void;
   setPlotCell: (plotLineId: string, nodeId: string, note: string) => void;
+
+  // Collections
+  addCollection: (name: string) => void;
+  deleteCollection: (id: string) => void;
+  renameCollection: (id: string, name: string) => void;
+  addToCollection: (collectionId: string, nodeId: string) => void;
+  removeFromCollection: (collectionId: string, nodeId: string) => void;
 
   // Snapshots
   addSnapshot: (nodeId: string, snapshot: Snapshot) => void;
@@ -67,7 +74,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const { project } = get();
     if (!project) { set({ selectedNodeId: id }); return; }
     const node = findNode(project.binder, id);
-    const viewMode = node?.type === "folder" ? "scrivenings" : "single";
+    const viewMode = node?.type === "folder" ? "union" : "single";
     set({ selectedNodeId: id, viewMode });
   },
 
@@ -165,6 +172,67 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
               [plotLineId]: { ...(grid.cells[plotLineId] ?? {}), [nodeId]: { note } },
             },
           },
+        },
+      };
+    }),
+
+  addCollection: (name) =>
+    set((s) => {
+      if (!s.project) return {};
+      const collection: Collection = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        nodeIds: [],
+        createdAt: new Date().toISOString(),
+      };
+      return { project: { ...s.project, collections: [...(s.project.collections ?? []), collection] } };
+    }),
+
+  deleteCollection: (id) =>
+    set((s) => {
+      if (!s.project) return {};
+      return { project: { ...s.project, collections: (s.project.collections ?? []).filter((c) => c.id !== id) } };
+    }),
+
+  renameCollection: (id, name) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          collections: (s.project.collections ?? []).map((c) =>
+            c.id === id ? { ...c, name: name.trim() } : c
+          ),
+        },
+      };
+    }),
+
+  addToCollection: (collectionId, nodeId) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          collections: (s.project.collections ?? []).map((c) =>
+            c.id === collectionId && !c.nodeIds.includes(nodeId)
+              ? { ...c, nodeIds: [...c.nodeIds, nodeId] }
+              : c
+          ),
+        },
+      };
+    }),
+
+  removeFromCollection: (collectionId, nodeId) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          collections: (s.project.collections ?? []).map((c) =>
+            c.id === collectionId
+              ? { ...c, nodeIds: c.nodeIds.filter((id) => id !== nodeId) }
+              : c
+          ),
         },
       };
     }),

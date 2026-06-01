@@ -83,6 +83,13 @@ export interface PlotGrid {
   cells: Record<string, Record<string, PlotCell>>;
 }
 
+export interface Collection {
+  id: string;
+  name: string;
+  nodeIds: string[];   // document binder node IDs (not Drive IDs)
+  createdAt: string;
+}
+
 export interface Snapshot {
   id: string;
   name: string;
@@ -103,6 +110,7 @@ export interface ProjectData {
   metadata: Record<string, DocumentMetadata>;
   settings: ProjectSettings;
   plotGrid?: PlotGrid;
+  collections?: Collection[];
   snapshots?: Record<string, Snapshot[]>;       // nodeId -> snapshots
   wordCountHistory?: Record<string, number>;    // YYYY-MM-DD -> total project word count
 }
