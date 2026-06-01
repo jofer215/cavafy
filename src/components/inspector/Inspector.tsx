@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { TagsPanel } from "./TagsPanel";
 import { ReferencesPanel } from "./ReferencesPanel";
+import { SnapshotsPanel } from "./SnapshotsPanel";
 
 const TABS = [
   { id: "meta",       label: "Meta"       },
@@ -14,6 +15,7 @@ const TABS = [
   { id: "synopsis",   label: "Synopsis"   },
   { id: "notes",      label: "Notes"      },
   { id: "references", label: "References" },
+  { id: "snapshots",  label: "Snapshots"  },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -132,6 +134,15 @@ export function Inspector() {
         )}
 
         {tab === "references" && <ReferencesPanel />}
+
+        {tab === "snapshots" && selectedNodeId && isDocument && (
+          <SnapshotsPanel nodeId={selectedNodeId} />
+        )}
+        {tab === "snapshots" && (!selectedNodeId || !isDocument) && (
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+            Select a document to manage snapshots.
+          </p>
+        )}
       </div>
     </aside>
   );

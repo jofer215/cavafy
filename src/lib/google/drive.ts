@@ -77,6 +77,19 @@ export async function createProject(accessToken: string, name: string): Promise<
   const projectId = crypto.randomUUID();
   const projectData = createDefaultProject(projectId, name, folderId);
 
+  // Create Drive files for the default document nodes
+  const stampDriveIds = async (nodes: import("@/lib/project/schema").BinderNode[]): Promise<import("@/lib/project/schema").BinderNode[]> => {
+    return Promise.all(nodes.map(async (n) => {
+      if (n.type === "document" && !n.driveId) {
+        const id = await createDocument(accessToken, folderId, n.title);
+        return { ...n, driveId: id };
+      }
+      if (n.children) return { ...n, children: await stampDriveIds(n.children) };
+      return n;
+    }));
+  };
+  projectData.binder = await stampDriveIds(projectData.binder);
+
   await saveProjectMeta(accessToken, folderId, projectData);
   return projectData;
 }
@@ -135,6 +148,28 @@ export async function createDocument(
   return res.data.id;
 }
 
+// Read a Google Doc as HTML (strips Google's wrapper, returns body content only)
+export async function getDocumentHTML(accessToken: string, fileId: string): Promise<string> {
+  const drive = getDriveClient(accessToken);
+  const res = await drive.files.export(
+    { fileId, mimeType: "text/html" },
+    { responseType: "text" }
+  );
+  const raw = res.data as string;
+  const bodyMatch = raw.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  return bodyMatch ? bodyMatch[1].trim() : raw;
+}
+
+// Write HTML into a Google Doc (Drive converts it to native Docs format)
+export async function saveDocumentHTML(
+  accessToken: string,
+  fileId: string,
+  html: string
+): Promise<void> {
+  const drive = getDriveClient(accessToken);
+  await drive.files.update({ fileId, media: { mimeType: "text/html", body: html } });
+}
+
 export async function createFolder(
   accessToken: string,
   parentFolderId: string,
@@ -184,4 +219,29 @@ export async function renameFile(
 export async function trashFile(accessToken: string, fileId: string): Promise<void> {
   const drive = getDriveClient(accessToken);
   await drive.files.update({ fileId, requestBody: { trashed: true } });
+}
+
+// Snapshots are stored as plain HTML files (not Google Docs)
+export async function createSnapshotFile(
+  accessToken: string,
+  parentFolderId: string,
+  name: string,
+  html: string
+): Promise<string> {
+  const drive = getDriveClient(accessToken);
+  const res = await drive.files.create({
+    requestBody: {
+      name: `snapshot_${name}.html`,
+      mimeType: "text/html",
+      parents: [parentFolderId],
+    },
+    media: { mimeType: "text/html", body: html },
+    fields: "id",
+  });
+  if (!res.data.id) throw new Error("Failed to create snapshot file");
+  return res.data.id;
+}
+
+export async function getSnapshotContent(accessToken: string, fileId: string): Promise<string> {
+  return getFileContent(accessToken, fileId);
 }

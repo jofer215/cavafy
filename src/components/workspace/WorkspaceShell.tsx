@@ -6,10 +6,11 @@ import { ProjectData } from "@/lib/project/schema";
 import { Binder } from "@/components/binder/Binder";
 import { EditorPanel } from "@/components/editor/EditorPanel";
 import { Inspector } from "@/components/inspector/Inspector";
+import { WordCountWidget } from "./WordCountWidget";
 import { PlotGridView } from "@/components/plot-grid/PlotGrid";
 import { CorkboardView } from "@/components/corkboard/Corkboard";
 import { OutlinerView } from "@/components/outliner/Outliner";
-import { BookOpen, ChevronLeft, PanelRight, Grid3x3, FileText, LayoutGrid, Table2 } from "lucide-react";
+import { BookOpen, ChevronLeft, PanelLeft, PanelRight, Grid3x3, FileText, LayoutGrid, Table2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ interface WorkspaceShellProps {
 
 export function WorkspaceShell({ initialProject, initialView = "editor" }: WorkspaceShellProps) {
   const { setProject } = useProjectStore();
+  const [showBinder, setShowBinder] = useState(true);
   const [showInspector, setShowInspector] = useState(true);
   const [activeView, setActiveView] = useState<WorkspaceView>(initialView);
 
@@ -53,6 +55,16 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
             Projects
           </Link>
           <span style={{ color: "var(--border)" }}>|</span>
+          {(activeView === "editor" || activeView === "corkboard") && (
+            <button
+              onClick={() => setShowBinder((v) => !v)}
+              className="p-1.5 rounded hover:bg-[var(--bg-panel)] transition-colors"
+              style={{ color: showBinder ? "var(--accent)" : "var(--text-muted)" }}
+              title="Toggle binder"
+            >
+              <PanelLeft size={16} />
+            </button>
+          )}
           <BookOpen size={14} style={{ color: "var(--accent)" }} />
           <span className="text-sm font-medium truncate max-w-[200px]" style={{ color: "var(--text)" }}>
             {initialProject.name}
@@ -80,6 +92,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
         </nav>
 
         <div className="flex items-center gap-2">
+          <WordCountWidget />
           {(activeView === "editor" || activeView === "corkboard") && (
             <button
               onClick={() => setShowInspector((v) => !v)}
@@ -97,14 +110,14 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
       <div className="flex flex-1 min-h-0">
         {activeView === "editor" && (
           <>
-            <Binder />
+            {showBinder && <Binder />}
             <EditorPanel />
             {showInspector && <Inspector />}
           </>
         )}
         {activeView === "corkboard" && (
           <>
-            <Binder />
+            {showBinder && <Binder />}
             <CorkboardView />
             {showInspector && <Inspector />}
           </>

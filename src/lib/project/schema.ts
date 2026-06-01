@@ -83,6 +83,13 @@ export interface PlotGrid {
   cells: Record<string, Record<string, PlotCell>>;
 }
 
+export interface Snapshot {
+  id: string;
+  name: string;
+  createdAt: string;
+  driveId: string;  // plain HTML file in Drive (not a Google Doc)
+}
+
 export interface ProjectData {
   id: string;
   name: string;
@@ -96,6 +103,14 @@ export interface ProjectData {
   metadata: Record<string, DocumentMetadata>;
   settings: ProjectSettings;
   plotGrid?: PlotGrid;
+  snapshots?: Record<string, Snapshot[]>;       // nodeId -> snapshots
+  wordCountHistory?: Record<string, number>;    // YYYY-MM-DD -> total project word count
+}
+
+export function getTotalWordCount(project: ProjectData): number {
+  return Object.values(project.metadata).reduce((sum, m) => {
+    return sum + ((m.customFields?._wordCount as number) ?? 0);
+  }, 0);
 }
 
 export const DEFAULT_STATUSES: StatusOption[] = [
