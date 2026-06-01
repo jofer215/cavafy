@@ -1,6 +1,6 @@
 # Cavafy
 
-An open-source novel writing application inspired by Scrivener, powered by Google Drive.
+An open-source novel writing application for serious writers, powered by Google Drive.
 
 Write from anywhere — Mac, iPad, Linux, or any browser — with your work always organized and safe in your own Google Drive.
 

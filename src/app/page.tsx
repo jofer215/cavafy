@@ -38,11 +38,11 @@ export default async function Home() {
         </div>
         <h1 className="text-5xl font-bold tracking-tight mb-5 leading-tight" style={{ color: "var(--text)" }}>
           Write your novel.<br />
-          <span style={{ color: "var(--accent)" }}>Organized like Scrivener.</span>
+          <span style={{ color: "var(--accent)" }}>Own every word.</span>
         </h1>
         <p className="text-lg mb-10 max-w-xl" style={{ color: "var(--text-muted)" }}>
-          Cavafy is a free, open-source writing app that lives entirely in your Google Drive.
-          Binder, corkboard, plot grid, and a distraction-free editor — with no subscription and no lock-in.
+          Cavafy is a free, open-source writing app built for novelists.
+          Binder, corkboard, plot grid, and a distraction-free editor — with everything stored in your own Google Drive. No subscription, no lock-in.
         </p>
         <div className="flex items-center gap-4">
           <SignInButtonLarge />
