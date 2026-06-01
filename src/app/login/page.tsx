@@ -1,56 +1,51 @@
 import { signIn } from "@/auth";
 import { BookOpen } from "lucide-react";
+import Link from "next/link";
 
-export default function LoginPage() {
+interface Props {
+  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: Props) {
+  const { error, callbackUrl } = await searchParams;
+  const redirectTo = callbackUrl ?? "/projects";
+  const sessionExpired = error === "session_expired";
+
   return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: "var(--bg)" }}
-    >
-      <div
-        className="flex flex-col items-center gap-8 p-12 rounded-2xl"
+    <div className="min-h-screen flex flex-col items-center justify-center"
+      style={{ backgroundColor: "var(--bg)" }}>
+      <div className="flex flex-col items-center gap-8 p-12 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-elevated)",
           boxShadow: "var(--shadow-md)",
           border: "1px solid var(--border)",
-        }}
-      >
+        }}>
         <div className="flex flex-col items-center gap-3">
-          <BookOpen
-            size={40}
-            style={{ color: "var(--accent)" }}
-            strokeWidth={1.5}
-          />
-          <h1
-            className="text-3xl font-semibold tracking-tight"
-            style={{ color: "var(--text)" }}
-          >
+          <BookOpen size={40} style={{ color: "var(--accent)" }} strokeWidth={1.5} />
+          <h1 className="text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
             Cavafy
           </h1>
-          <p
-            className="text-sm text-center max-w-xs"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <p className="text-sm text-center max-w-xs" style={{ color: "var(--text-muted)" }}>
             Your novels, organized. Your words, protected.
             <br />
             Everything stored in your own Google Drive.
           </p>
         </div>
 
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/projects" });
-          }}
-        >
-          <button
-            type="submit"
+        {sessionExpired && (
+          <div className="px-4 py-3 rounded-lg text-sm text-center max-w-xs"
+            style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+            Your session expired. Please sign in again to continue.
+          </div>
+        )}
+
+        <form action={async () => {
+          "use server";
+          await signIn("google", { redirectTo });
+        }}>
+          <button type="submit"
             className="flex items-center gap-3 px-6 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer"
-            style={{
-              backgroundColor: "var(--accent)",
-              color: "var(--accent-fg)",
-            }}
-          >
+            style={{ backgroundColor: "var(--accent)", color: "var(--accent-fg)" }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#fff" fillOpacity=".9"/>
               <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#fff" fillOpacity=".75"/>
@@ -64,6 +59,11 @@ export default function LoginPage() {
         <p className="text-xs" style={{ color: "var(--text-faint)" }}>
           Open source · GPL v3 · Your data stays in your Drive
         </p>
+      </div>
+
+      <div className="mt-6 flex gap-4 text-xs" style={{ color: "var(--text-faint)" }}>
+        <Link href="/privacy" className="hover:text-[var(--text)] transition-colors">Privacy Policy</Link>
+        <Link href="/terms" className="hover:text-[var(--text)] transition-colors">Terms of Service</Link>
       </div>
     </div>
   );

@@ -77,18 +77,24 @@ export async function createProject(accessToken: string, name: string): Promise<
   const projectId = crypto.randomUUID();
   const projectData = createDefaultProject(projectId, name, folderId);
 
-  // Create Drive files for the default document nodes
-  const stampDriveIds = async (nodes: import("@/lib/project/schema").BinderNode[]): Promise<import("@/lib/project/schema").BinderNode[]> => {
+  // Mirror binder structure into Drive: create subfolders and documents recursively
+  type BNode = import("@/lib/project/schema").BinderNode;
+  const stampDriveIds = async (nodes: BNode[], parentDriveId: string): Promise<BNode[]> => {
     return Promise.all(nodes.map(async (n) => {
       if (n.type === "document" && !n.driveId) {
-        const id = await createDocument(accessToken, folderId, n.title);
+        const id = await createDocument(accessToken, parentDriveId, n.title);
         return { ...n, driveId: id };
       }
-      if (n.children) return { ...n, children: await stampDriveIds(n.children) };
+      if (n.type === "folder" && !n.driveId) {
+        const id = await createFolder(accessToken, parentDriveId, n.title);
+        const children = n.children ? await stampDriveIds(n.children, id) : [];
+        return { ...n, driveId: id, children };
+      }
+      if (n.children) return { ...n, children: await stampDriveIds(n.children, parentDriveId) };
       return n;
     }));
   };
-  projectData.binder = await stampDriveIds(projectData.binder);
+  projectData.binder = await stampDriveIds(projectData.binder, folderId);
 
   await saveProjectMeta(accessToken, folderId, projectData);
   return projectData;

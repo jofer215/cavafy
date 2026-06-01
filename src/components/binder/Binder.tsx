@@ -3,7 +3,7 @@
 import { Plus, FilePlus, FolderPlus } from "lucide-react";
 import { useProjectStore } from "@/store/project";
 import { BinderItem } from "./BinderItem";
-import { BinderNode } from "@/lib/project/schema";
+import { BinderNode, findNode } from "@/lib/project/schema";
 import { generateId } from "@/lib/utils";
 import { useState } from "react";
 
@@ -47,12 +47,25 @@ export function Binder() {
       return findFolder(project.binder);
     })();
 
+    // Resolve the Drive folder ID for the parent binder folder
+    const parentDriveFolderId = parentId
+      ? (findNode(project.binder, parentId)?.driveId ?? project.driveRootId)
+      : project.driveRootId;
+
     let driveId: string | undefined;
     if (type === "document") {
       const res = await fetch(`/api/projects/${project.id}/documents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, parentFolderId: parentDriveFolderId }),
+      });
+      const data = await res.json();
+      driveId = data.driveId;
+    } else {
+      const res = await fetch(`/api/projects/${project.id}/folders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, parentFolderId: parentDriveFolderId }),
       });
       const data = await res.json();
       driveId = data.driveId;
