@@ -29,12 +29,8 @@ export function Binder() {
   if (!project) return null;
 
   const addItem = async (type: "document" | "folder") => {
-    const newNode: BinderNode = {
-      id: generateId(),
-      title: type === "folder" ? "New Folder" : "Untitled Scene",
-      type,
-      children: type === "folder" ? [] : undefined,
-    };
+    const title = type === "folder" ? "New Folder" : "Untitled Scene";
+
     // Try to add inside selected folder, else at top level
     const parentId = (() => {
       if (!selectedNodeId) return null;
@@ -50,6 +46,25 @@ export function Binder() {
       };
       return findFolder(project.binder);
     })();
+
+    let driveId: string | undefined;
+    if (type === "document") {
+      const res = await fetch(`/api/projects/${project.id}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const data = await res.json();
+      driveId = data.driveId;
+    }
+
+    const newNode: BinderNode = {
+      id: generateId(),
+      title,
+      type,
+      driveId,
+      children: type === "folder" ? [] : undefined,
+    };
 
     const updated = appendToNode(project.binder, parentId, newNode);
     updateBinder(updated);

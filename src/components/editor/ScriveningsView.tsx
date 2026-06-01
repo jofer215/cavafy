@@ -8,7 +8,7 @@ import Typography from "@tiptap/extension-typography";
 import Highlight from "@tiptap/extension-highlight";
 import { BinderNode, collectDocuments, findNode } from "@/lib/project/schema";
 import { useProjectStore } from "@/store/project";
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { Layers } from "lucide-react";
 
 // One TipTap segment for a single document inside the Scrivenings view
@@ -36,10 +36,14 @@ function DocumentSegment({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: html }),
         });
-      } catch {/* silent */ }
+      } catch (e) {
+        console.error("Auto-save failed:", e);
+      }
     },
     [node.driveId, projectId]
   );
+  const saveRef = useRef(save);
+  useMemo(() => { saveRef.current = save; }, [save]);
 
   const editor = useEditor({
     extensions: [
@@ -76,9 +80,8 @@ function DocumentSegment({
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      if (editor) save(editor.getHTML());
+      if (editor) saveRef.current(editor.getHTML());
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
 
   return (

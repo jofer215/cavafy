@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid } from "@/lib/project/schema";
+import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, getTotalWordCount } from "@/lib/project/schema";
 
 export type ViewMode = "single" | "scrivenings";
 
@@ -27,6 +27,13 @@ interface ProjectStore {
   addPlotLine: (name: string, color: string) => void;
   removePlotLine: (id: string) => void;
   setPlotCell: (plotLineId: string, nodeId: string, note: string) => void;
+
+  // Snapshots
+  addSnapshot: (nodeId: string, snapshot: Snapshot) => void;
+  deleteSnapshot: (nodeId: string, snapshotId: string) => void;
+
+  // Word count history
+  recordWordCount: () => void;
 
   save: () => Promise<void>;
 }
@@ -162,7 +169,48 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       };
     }),
 
+  addSnapshot: (nodeId, snapshot) =>
+    set((s) => {
+      if (!s.project) return {};
+      const existing = s.project.snapshots?.[nodeId] ?? [];
+      return {
+        project: {
+          ...s.project,
+          snapshots: { ...s.project.snapshots, [nodeId]: [...existing, snapshot] },
+        },
+      };
+    }),
+
+  deleteSnapshot: (nodeId, snapshotId) =>
+    set((s) => {
+      if (!s.project) return {};
+      const existing = s.project.snapshots?.[nodeId] ?? [];
+      return {
+        project: {
+          ...s.project,
+          snapshots: {
+            ...s.project.snapshots,
+            [nodeId]: existing.filter((sn) => sn.id !== snapshotId),
+          },
+        },
+      };
+    }),
+
+  recordWordCount: () =>
+    set((s) => {
+      if (!s.project) return {};
+      const today = new Date().toISOString().slice(0, 10);
+      const total = getTotalWordCount(s.project);
+      return {
+        project: {
+          ...s.project,
+          wordCountHistory: { ...s.project.wordCountHistory, [today]: total },
+        },
+      };
+    }),
+
   save: async () => {
+    get().recordWordCount();
     const { project } = get();
     if (!project) return;
     try {

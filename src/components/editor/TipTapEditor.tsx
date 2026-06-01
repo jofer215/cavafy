@@ -6,7 +6,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import Typography from "@tiptap/extension-typography";
 import Highlight from "@tiptap/extension-highlight";
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 
 interface TipTapEditorProps {
   docId: string;
@@ -35,6 +35,9 @@ export function TipTapEditor({ docId, projectId, title, onWordCountChange }: Tip
     },
     [docId, projectId]
   );
+  // Keep a ref so the unmount cleanup always calls the latest version
+  const saveContentRef = useRef(saveContent);
+  useMemo(() => { saveContentRef.current = saveContent; }, [saveContent]);
 
   const editor = useEditor({
     extensions: [
@@ -76,15 +79,39 @@ export function TipTapEditor({ docId, projectId, title, onWordCountChange }: Tip
     return () => { cancelled = true; };
   }, [docId, projectId, editor]);
 
-  // Cleanup timer on unmount
+  // Respond to snapshot HTML requests from SnapshotsPanel
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => {
+      window.dispatchEvent(
+        new CustomEvent("cavafy:editor-html-response", { detail: editor.getHTML() })
+      );
+    };
+    window.addEventListener("cavafy:editor-html-request", handler);
+    return () => window.removeEventListener("cavafy:editor-html-request", handler);
+  }, [editor]);
+
+  // Listen for snapshot restore events dispatched by SnapshotsPanel
+  useEffect(() => {
+    if (!editor) return;
+    const handler = (e: Event) => {
+      const html = (e as CustomEvent<string>).detail;
+      editor.commands.setContent(html);
+      lastSavedContent.current = "";
+      saveContentRef.current(html);
+    };
+    window.addEventListener("cavafy:restore-content", handler);
+    return () => window.removeEventListener("cavafy:restore-content", handler);
+  }, [editor]);
+
+  // Flush pending save on unmount
   useEffect(() => {
     return () => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
-        if (editor) saveContent(editor.getHTML());
+        if (editor) saveContentRef.current(editor.getHTML());
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor]);
 
   return (
