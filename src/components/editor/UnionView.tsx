@@ -11,7 +11,7 @@ import { useProjectStore } from "@/store/project";
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { Layers } from "lucide-react";
 
-// One TipTap segment for a single document inside the Scrivenings view
+// One TipTap segment for a single document inside Union view
 function DocumentSegment({
   node,
   projectId,
@@ -85,7 +85,7 @@ function DocumentSegment({
   }, [editor]);
 
   return (
-    <div className="scrivenings-segment">
+    <div className="union-segment">
       {/* Scene title divider */}
       <div
         className="flex items-center gap-3 px-16 py-4 select-none"
@@ -120,20 +120,24 @@ function DocumentSegment({
   );
 }
 
-// ── Main Scrivenings view ──────────────────────────────────────────────────
-interface ScriveningsViewProps {
-  folderId: string;
+// ── Main Union view ────────────────────────────────────────────────────────
+interface UnionViewProps {
   projectId: string;
+  folderId?: string;    // collect all active docs from this folder
+  nodeIds?: string[];   // or use an explicit list of doc node IDs
+  title?: string;       // header label when using nodeIds
 }
 
-export function ScriveningsView({ folderId, projectId }: ScriveningsViewProps) {
+export function UnionView({ folderId, nodeIds, title, projectId }: UnionViewProps) {
   const { project } = useProjectStore();
   const [wordCounts, setWordCounts] = useState<Record<string, number>>({});
 
   if (!project) return null;
 
-  const folder = findNode(project.binder, folderId);
-  const docs = folder ? collectDocuments(folder.children ?? []) : [];
+  const folder = folderId ? findNode(project.binder, folderId) : null;
+  const docs = nodeIds
+    ? nodeIds.map((id) => findNode(project.binder, id)).filter((n): n is BinderNode => n !== null && n.type === "document")
+    : folder ? collectDocuments(folder.children ?? []) : [];
 
   const handleWordCount = (id: string, wc: number) =>
     setWordCounts((prev) => ({ ...prev, [id]: wc }));
@@ -148,7 +152,7 @@ export function ScriveningsView({ folderId, projectId }: ScriveningsViewProps) {
       >
         <Layers size={36} strokeWidth={1} style={{ color: "var(--text-faint)" }} />
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          No documents in <strong>{folder?.title}</strong> yet.
+          No documents in <strong>{title ?? folder?.title}</strong> yet.
         </p>
         <p className="text-xs" style={{ color: "var(--text-faint)" }}>
           Add documents to this folder in the binder.
@@ -162,7 +166,7 @@ export function ScriveningsView({ folderId, projectId }: ScriveningsViewProps) {
       className="flex-1 flex flex-col h-full overflow-hidden"
       style={{ backgroundColor: "var(--bg)" }}
     >
-      {/* Scrivenings header */}
+      {/* Union header */}
       <div
         className="shrink-0 flex items-center justify-between px-8 py-2 border-b"
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-sidebar)" }}
@@ -170,7 +174,7 @@ export function ScriveningsView({ folderId, projectId }: ScriveningsViewProps) {
         <div className="flex items-center gap-2">
           <Layers size={14} style={{ color: "var(--accent)" }} />
           <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
-            {folder?.title}
+            {title ?? folder?.title}
           </span>
           <span className="text-xs" style={{ color: "var(--text-faint)" }}>
             — {docs.length} {docs.length === 1 ? "scene" : "scenes"}
@@ -194,7 +198,7 @@ export function ScriveningsView({ folderId, projectId }: ScriveningsViewProps) {
             onWordCount={handleWordCount}
           />
         ))}
-        <div className="h-24" /> {/* bottom breathing room */}
+        <div className="h-24" />
       </div>
     </div>
   );

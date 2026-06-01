@@ -3,7 +3,7 @@
 import { useProjectStore } from "@/store/project";
 import { findNode } from "@/lib/project/schema";
 import { TipTapEditor } from "./TipTapEditor";
-import { ScriveningsView } from "./ScriveningsView";
+import { UnionView } from "./UnionView";
 import { BookOpen } from "lucide-react";
 
 export function EditorPanel() {
@@ -19,16 +19,16 @@ export function EditorPanel() {
       >
         <BookOpen size={40} strokeWidth={1} style={{ color: "var(--text-faint)" }} />
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Select a document to write, or a folder for Scrivenings view
+          Select a document to write, or a folder for Union view
         </p>
       </div>
     );
   }
 
-  // Folder selected → Scrivenings view
-  if (viewMode === "scrivenings") {
+  // Folder selected → Union view
+  if (viewMode === "union") {
     return (
-      <ScriveningsView
+      <UnionView
         key={selectedNodeId}
         folderId={selectedNodeId}
         projectId={project.id}

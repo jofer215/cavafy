@@ -11,7 +11,7 @@ Write from anywhere — Mac, iPad, Linux, or any browser — with your work alwa
 - **Google OAuth** — sign in with your Google account; all files live in *your* Drive, not ours
 - **Binder** — collapsible tree (folders, chapters, scenes) with drag-to-reorder, rename, active/inactive toggle, archive folder, and label color-coding
 - **TipTap editor** — distraction-free prose editor with auto-save to Google Drive every 1.5s
-- **Scrivenings view** — select a folder to read all its scenes as one continuous scroll
+- **Union view** — select a folder to read all its scenes as one continuous scroll
 - **Inspector** — per-document status, label, synopsis, notes, tags, and references
 - **Tags & References** — `@pov`, `@char`, `@location`, `@plot` etc. per scene; References panel shows every scene a tag value appears in
 - **Plot Grid** — matrix of plot lines × scenes with per-cell notes
@@ -141,7 +141,7 @@ src/
     login/                    # Sign-in page
   components/
     binder/                   # Binder tree
-    editor/                   # TipTap editor, Scrivenings view
+    editor/                   # TipTap editor, Union view
     inspector/                # Inspector panel (meta, tags, synopsis, notes, references)
     corkboard/                # Index card grid
     outliner/                 # Spreadsheet table view

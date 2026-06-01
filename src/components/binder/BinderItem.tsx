@@ -15,7 +15,7 @@ interface BinderItemProps {
 }
 
 export function BinderItem({ node, depth = 0 }: BinderItemProps) {
-  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, updateBinder, project, save } =
+  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, updateBinder, project, save, addToCollection, removeFromCollection } =
     useProjectStore();
   const [renaming, setRenaming] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -206,6 +206,37 @@ export function BinderItem({ node, depth = 0 }: BinderItemProps) {
                 {isInactive ? <Eye size={12} /> : <EyeOff size={12} />}
                 {isInactive ? "Mark active" : "Mark inactive"}
               </button>
+
+              {/* Add to / remove from collections — documents only */}
+              {!isFolder && (project?.collections ?? []).length > 0 && (
+                <>
+                  <div className="mx-3 my-1 border-t" style={{ borderColor: "var(--border)" }} />
+                  {(project?.collections ?? []).map((c) => {
+                    const inCollection = c.nodeIds.includes(node.id);
+                    return (
+                      <button
+                        key={c.id}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-[var(--bg-panel)] transition-colors"
+                        style={{ color: "var(--text)" }}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          if (inCollection) {
+                            removeFromCollection(c.id, node.id);
+                          } else {
+                            addToCollection(c.id, node.id);
+                          }
+                          await save();
+                        }}
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: inCollection ? "var(--accent)" : "var(--border)" }} />
+                        {inCollection ? `Remove from "${c.name}"` : `Add to "${c.name}"`}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
             </div>
           )}
         </div>
