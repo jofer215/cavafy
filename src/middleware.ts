@@ -3,17 +3,30 @@ import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
+  const hasRefreshError = (req.auth as { error?: string } | null)?.error === "RefreshTokenError";
   const { pathname } = req.nextUrl;
 
-  const publicPaths = ["/login", "/api/auth"];
-  const isPublic = publicPaths.some((p) => pathname.startsWith(p));
+  const publicPaths = ["/", "/login", "/privacy", "/terms", "/drive-open", "/api/auth"];
+  const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  // Expired token: force re-login even if technically "authenticated"
+  if (hasRefreshError && !isPublic) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("error", "session_expired");
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   if (!isLoggedIn && !isPublic) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
-  if (isLoggedIn && pathname === "/login") {
+
+  if (isLoggedIn && !hasRefreshError && pathname === "/login") {
     return NextResponse.redirect(new URL("/projects", req.url));
   }
+
   return NextResponse.next();
 });
 
