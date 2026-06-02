@@ -8,6 +8,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { TagsPanel } from "./TagsPanel";
 import { ReferencesPanel } from "./ReferencesPanel";
 import { SnapshotsPanel } from "./SnapshotsPanel";
+import { PieceInspector } from "./PieceInspector";
 
 const TABS = [
   { id: "meta",       label: "Meta"       },
@@ -21,7 +22,7 @@ const TABS = [
 type Tab = (typeof TABS)[number]["id"];
 
 export function Inspector() {
-  const { project, selectedNodeId, updateMetadata, save } = useProjectStore();
+  const { project, selectedNodeId, selectedPieceId, updateMetadata, save } = useProjectStore();
   const [tab, setTab] = useState<Tab>("meta");
   const [synopsis, setSynopsis] = useState("");
   const [notes, setNotes] = useState("");
@@ -57,6 +58,12 @@ export function Inspector() {
   }, [debouncedNotes]);
 
   if (!project) return null;
+
+  // Piece selected → render piece inspector instead of document inspector
+  if (selectedPieceId) {
+    const piece = (project.pieces ?? []).find((p) => p.id === selectedPieceId);
+    if (piece) return <PieceInspector piece={piece} />;
+  }
 
   return (
     <aside

@@ -62,6 +62,7 @@ export interface ProjectSettings {
   targetWordCount?: number;
   authorName?: string;
   dailyWordCountGoal?: number;
+  placesImported?: boolean;
 }
 
 // ── Plot Grid ──────────────────────────────────────────────────────────────
@@ -82,6 +83,40 @@ export interface PlotGrid {
   // cells[plotLineId][nodeId] = PlotCell
   cells: Record<string, Record<string, PlotCell>>;
 }
+
+// ── Pieces ─────────────────────────────────────────────────────────────────
+
+export interface PieceNote {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export interface Piece {
+  id: string;
+  name: string;
+  alternativeNames: string[];
+  pieceType: string;        // references PieceType.id
+  pieceNotes: PieceNote[];  // [0] is always "Description", never deletable
+  tags: string[];
+  relations: string[];      // other Piece IDs
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PieceType {
+  id: string;
+  label: string;
+  icon: string;       // lucide icon name
+  builtIn: boolean;
+}
+
+export const DEFAULT_PIECE_TYPES: PieceType[] = [
+  { id: "character", label: "Character", icon: "User",    builtIn: true },
+  { id: "place",     label: "Place",     icon: "MapPin",  builtIn: true },
+  { id: "object",    label: "Object",    icon: "Package", builtIn: true },
+  { id: "other",     label: "Other",     icon: "Circle",  builtIn: true },
+];
 
 export interface Collection {
   id: string;
@@ -110,6 +145,8 @@ export interface ProjectData {
   metadata: Record<string, DocumentMetadata>;
   settings: ProjectSettings;
   plotGrid?: PlotGrid;
+  pieces?: Piece[];
+  pieceTypes?: PieceType[];
   collections?: Collection[];
   snapshots?: Record<string, Snapshot[]>;       // nodeId -> snapshots
   wordCountHistory?: Record<string, number>;    // YYYY-MM-DD -> total project word count

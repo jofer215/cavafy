@@ -12,11 +12,13 @@ import { PlotGridView } from "@/components/plot-grid/PlotGrid";
 import { CorkboardView } from "@/components/corkboard/Corkboard";
 import { OutlinerView } from "@/components/outliner/Outliner";
 import { CollectionsView } from "@/components/collections/CollectionsView";
-import { BookOpen, ChevronLeft, PanelLeft, PanelRight, Grid3x3, FileText, LayoutGrid, Table2, Layers } from "lucide-react";
+import { PiecesView } from "@/components/pieces/PiecesView";
+import { migrateBinderFoldersToPieces } from "@/lib/pieces/migration";
+import { BookOpen, BookMarked, ChevronLeft, PanelLeft, PanelRight, Grid3x3, FileText, LayoutGrid, Table2, Layers } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export type WorkspaceView = "editor" | "corkboard" | "outliner" | "plot-grid" | "collections";
+export type WorkspaceView = "editor" | "corkboard" | "outliner" | "plot-grid" | "collections" | "pieces";
 
 interface WorkspaceShellProps {
   initialProject: ProjectData;
@@ -24,22 +26,41 @@ interface WorkspaceShellProps {
 }
 
 export function WorkspaceShell({ initialProject, initialView = "editor" }: WorkspaceShellProps) {
-  const { setProject } = useProjectStore();
+  const { setProject, save } = useProjectStore();
   const [showBinder, setShowBinder] = useState(true);
   const [showInspector, setShowInspector] = useState(true);
   const [activeView, setActiveView] = useState<WorkspaceView>(initialView);
 
   useEffect(() => {
     setProject(initialProject);
-  }, [initialProject, setProject]);
+
+    // Run one-time migration of Characters + Places folders → Pieces
+    const migrated = migrateBinderFoldersToPieces(initialProject);
+    if (migrated) {
+      setProject(migrated);
+      save();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProject]);
+
+  // Allow Binder to switch the active view via custom event
+  useEffect(() => {
+    const handler = (e: Event) => setActiveView((e as CustomEvent<WorkspaceView>).detail);
+    window.addEventListener("cavafy:set-view", handler);
+    return () => window.removeEventListener("cavafy:set-view", handler);
+  }, []);
 
   const navItems: { view: WorkspaceView; icon: React.ReactNode; label: string }[] = [
-    { view: "editor",      icon: <FileText size={14} />,    label: "Editor"      },
-    { view: "corkboard",   icon: <LayoutGrid size={14} />,  label: "Corkboard"   },
-    { view: "outliner",    icon: <Table2 size={14} />,      label: "Outliner"    },
-    { view: "plot-grid",   icon: <Grid3x3 size={14} />,     label: "Plot Grid"   },
-    { view: "collections", icon: <Layers size={14} />,      label: "Collections" },
+    { view: "editor",      icon: <FileText size={14} />,     label: "Editor"      },
+    { view: "corkboard",   icon: <LayoutGrid size={14} />,   label: "Corkboard"   },
+    { view: "outliner",    icon: <Table2 size={14} />,       label: "Outliner"    },
+    { view: "plot-grid",   icon: <Grid3x3 size={14} />,      label: "Plot Grid"   },
+    { view: "collections", icon: <Layers size={14} />,       label: "Collections" },
+    { view: "pieces",      icon: <BookMarked size={14} />,   label: "Pieces"      },
   ];
+
+  const showBinderToggle = ["editor", "corkboard", "collections", "pieces"].includes(activeView);
+  const showInspectorToggle = ["editor", "corkboard", "pieces"].includes(activeView);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
@@ -58,7 +79,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
             Projects
           </Link>
           <span style={{ color: "var(--border)" }}>|</span>
-          {(activeView === "editor" || activeView === "corkboard" || activeView === "collections") && (
+          {showBinderToggle && (
             <button
               onClick={() => setShowBinder((v) => !v)}
               className="p-1.5 rounded hover:bg-[var(--bg-panel)] transition-colors"
@@ -97,7 +118,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
         <div className="flex items-center gap-2">
           <OfflineBanner />
           <WordCountWidget />
-          {(activeView === "editor" || activeView === "corkboard") && (
+          {showInspectorToggle && (
             <button
               onClick={() => setShowInspector((v) => !v)}
               className="p-1.5 rounded hover:bg-[var(--bg-panel)] transition-colors"
@@ -132,6 +153,13 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
           <>
             {showBinder && <Binder />}
             <CollectionsView projectId={initialProject.id} />
+          </>
+        )}
+        {activeView === "pieces" && (
+          <>
+            {showBinder && <Binder />}
+            <PiecesView projectId={initialProject.id} />
+            {showInspector && <Inspector />}
           </>
         )}
       </div>
