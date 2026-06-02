@@ -1,11 +1,13 @@
 "use client";
 
-import { Plus, FilePlus, FolderPlus } from "lucide-react";
+import { Plus, FilePlus, FolderPlus, BookMarked, ChevronRight, LayoutGrid, List, AlignJustify, Tag } from "lucide-react";
 import { useProjectStore } from "@/store/project";
 import { BinderItem } from "./BinderItem";
 import { BinderNode, findNode } from "@/lib/project/schema";
 import { generateId } from "@/lib/utils";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
+import type { WorkspaceView } from "@/components/workspace/WorkspaceShell";
 
 function appendToNode(
   nodes: BinderNode[],
@@ -143,13 +145,140 @@ export function Binder() {
       </div>
 
       {/* Tree */}
-      <nav className="flex-1 overflow-y-auto py-2">
-        <ul>
+      <nav className="flex-1 overflow-y-auto">
+        <ul className="py-2">
           {project.binder.map((node) => (
             <BinderItem key={node.id} node={node} />
           ))}
         </ul>
+
+        {/* ── Pieces section ─────────────────────────────── */}
+        <PiecesSection />
+
+        {/* ── Stub sections ──────────────────────────────── */}
+        <StubSections />
       </nav>
     </aside>
+  );
+}
+
+type PiecesSubView = "board" | "detailed" | "simple" | "types";
+
+const PIECES_SUB_VIEWS: { id: PiecesSubView; label: string; icon: React.ReactNode }[] = [
+  { id: "board",    label: "Piece Board",  icon: <LayoutGrid size={12} />  },
+  { id: "detailed", label: "Detailed",     icon: <AlignJustify size={12} /> },
+  { id: "simple",   label: "Simple",       icon: <List size={12} />        },
+  { id: "types",    label: "Piece Types",  icon: <Tag size={12} />         },
+];
+
+function dispatchSetView(view: WorkspaceView) {
+  window.dispatchEvent(new CustomEvent("cavafy:set-view", { detail: view }));
+}
+function dispatchPiecesSubView(subView: PiecesSubView) {
+  window.dispatchEvent(new CustomEvent("cavafy:pieces-subview", { detail: subView }));
+}
+
+function PiecesSection() {
+  const { project } = useProjectStore();
+  const [open, setOpen] = useState(true);
+  const [activeSubView, setActiveSubView] = useState<PiecesSubView>("board");
+
+  const handleSubView = (id: PiecesSubView) => {
+    setActiveSubView(id);
+    dispatchSetView("pieces");
+    dispatchPiecesSubView(id);
+  };
+
+  const handleNewPiece = () => {
+    dispatchSetView("pieces");
+    window.dispatchEvent(new CustomEvent("cavafy:new-piece"));
+  };
+
+  const pieceCount = (project?.pieces ?? []).length;
+
+  return (
+    <div className="border-t mt-1 pt-1" style={{ borderColor: "var(--border)" }}>
+      {/* Section header */}
+      <div className="flex items-center gap-1 px-3 py-1.5 group">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1.5 flex-1 text-left"
+        >
+          <ChevronRight
+            size={10}
+            className="transition-transform shrink-0"
+            style={{
+              color: "var(--text-faint)",
+              transform: open ? "rotate(90deg)" : undefined,
+            }}
+          />
+          <BookMarked size={12} style={{ color: "var(--accent)" }} />
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
+            Pieces
+          </span>
+          {pieceCount > 0 && (
+            <span className="text-xs ml-1" style={{ color: "var(--text-faint)" }}>{pieceCount}</span>
+          )}
+        </button>
+        <button
+          onClick={handleNewPiece}
+          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[var(--bg-panel)] transition-opacity"
+          style={{ color: "var(--text-muted)" }}
+          title="New piece"
+        >
+          <Plus size={12} />
+        </button>
+      </div>
+
+      {/* Sub-view items */}
+      {open && (
+        <ul>
+          {PIECES_SUB_VIEWS.map(({ id, label, icon }) => (
+            <li key={id}>
+              <button
+                onClick={() => handleSubView(id)}
+                className={cn(
+                  "flex items-center gap-2 w-full px-6 py-1.5 text-xs transition-colors text-left",
+                  activeSubView === id
+                    ? "text-[var(--accent)] bg-[var(--bg-panel)]"
+                    : "hover:bg-[var(--bg-panel)]"
+                )}
+                style={{ color: activeSubView === id ? "var(--accent)" : "var(--text-muted)" }}
+              >
+                {icon}
+                {label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// TODO: Future sections — no logic yet, navigation placeholders only
+const STUB_ITEMS = [
+  "Research Board",
+  "Planning Board",
+  "Manuscript Board",
+  "Goals",
+  "Project Scratchpad",
+  "Stash",
+  "Version History",
+];
+
+function StubSections() {
+  return (
+    <div className="border-t mt-1 pt-2 pb-4" style={{ borderColor: "var(--border)" }}>
+      {STUB_ITEMS.map((label) => (
+        <div
+          key={label}
+          className="px-6 py-1.5 text-xs"
+          style={{ color: "var(--text-faint)" }}
+        >
+          {label}
+        </div>
+      ))}
+    </div>
   );
 }

@@ -1,11 +1,12 @@
 // IndexedDB cache for offline support.
-// Three stores:
+// Stores:
 //   documents  — driveId → { driveId, projectId, content, savedAt }
 //   projects   — projectId → { projectId, data (ProjectData JSON), savedAt }
 //   pending    — auto-id → { url, method, body, createdAt }
+//   elements   — pieceId → { pieceId, projectId, savedAt } (v2)
 
 const DB_NAME = "cavafy";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -20,6 +21,9 @@ function open(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains("pending")) {
         db.createObjectStore("pending", { keyPath: "id", autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains("elements")) {
+        db.createObjectStore("elements", { keyPath: "pieceId" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -105,4 +109,23 @@ export const pendingQueue = {
 
   clear: (): Promise<undefined> =>
     tx("pending", "readwrite", (s) => s.clear()),
+};
+
+// ── Elements (Pieces cache) ────────────────────────────────────────────────
+
+export interface CachedElement {
+  pieceId: string;
+  projectId: string;
+  savedAt: string;
+}
+
+export const elementCache = {
+  get: (pieceId: string): Promise<CachedElement | undefined> =>
+    tx("elements", "readonly", (s) => s.get(pieceId)),
+
+  set: (entry: CachedElement): Promise<IDBValidKey> =>
+    tx("elements", "readwrite", (s) => s.put(entry)),
+
+  delete: (pieceId: string): Promise<undefined> =>
+    tx("elements", "readwrite", (s) => s.delete(pieceId)),
 };

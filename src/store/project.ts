@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, Collection, getTotalWordCount } from "@/lib/project/schema";
+import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, Collection, Piece, PieceNote, PieceType, DEFAULT_PIECE_TYPES, getTotalWordCount } from "@/lib/project/schema";
 import { pendingQueue } from "@/lib/cache/db";
 
 export type ViewMode = "single" | "union";
@@ -9,11 +9,26 @@ export type ViewMode = "single" | "union";
 interface ProjectStore {
   project: ProjectData | null;
   selectedNodeId: string | null;
+  selectedPieceId: string | null;
   viewMode: ViewMode;
   inspectorTab: "meta" | "notes" | "synopsis";
 
   setProject: (p: ProjectData) => void;
   setSelectedNode: (id: string | null) => void;
+  setSelectedPiece: (id: string | null) => void;
+
+  // Pieces
+  addPiece: (piece: Piece) => void;
+  updatePiece: (id: string, updates: Partial<Piece>) => void;
+  deletePiece: (id: string) => void;
+  addPieceNote: (pieceId: string, note: PieceNote) => void;
+  updatePieceNote: (pieceId: string, noteId: string, updates: Partial<PieceNote>) => void;
+  deletePieceNote: (pieceId: string, noteId: string) => void;
+  addPieceRelation: (pieceId: string, relatedId: string) => void;
+  removePieceRelation: (pieceId: string, relatedId: string) => void;
+  addPieceType: (type: PieceType) => void;
+  updatePieceType: (id: string, updates: Partial<PieceType>) => void;
+  deletePieceType: (id: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setInspectorTab: (tab: ProjectStore["inspectorTab"]) => void;
 
@@ -65,19 +80,22 @@ function toggleNodeActive(nodes: BinderNode[], id: string): BinderNode[] {
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   project: null,
   selectedNodeId: null,
+  selectedPieceId: null,
   viewMode: "single",
   inspectorTab: "meta",
 
   setProject: (project) => set({ project }),
 
   setSelectedNode: (id) => {
-    if (!id) { set({ selectedNodeId: null, viewMode: "single" }); return; }
+    if (!id) { set({ selectedNodeId: null, selectedPieceId: null, viewMode: "single" }); return; }
     const { project } = get();
-    if (!project) { set({ selectedNodeId: id }); return; }
+    if (!project) { set({ selectedNodeId: id, selectedPieceId: null }); return; }
     const node = findNode(project.binder, id);
     const viewMode = node?.type === "folder" ? "union" : "single";
-    set({ selectedNodeId: id, viewMode });
+    set({ selectedNodeId: id, selectedPieceId: null, viewMode });
   },
+
+  setSelectedPiece: (id) => set({ selectedPieceId: id, selectedNodeId: null }),
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setInspectorTab: (tab) => set({ inspectorTab: tab }),
@@ -234,6 +252,150 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
               ? { ...c, nodeIds: c.nodeIds.filter((id) => id !== nodeId) }
               : c
           ),
+        },
+      };
+    }),
+
+  // ── Pieces ────────────────────────────────────────────────────────────────
+
+  addPiece: (piece) =>
+    set((s) => {
+      if (!s.project) return {};
+      return { project: { ...s.project, pieces: [...(s.project.pieces ?? []), piece] } };
+    }),
+
+  updatePiece: (id, updates) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).map((p) =>
+            p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p
+          ),
+        },
+      };
+    }),
+
+  deletePiece: (id) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).filter((p) => p.id !== id),
+          // Also remove this piece from other pieces' relations
+        },
+        selectedPieceId: s.selectedPieceId === id ? null : s.selectedPieceId,
+      };
+    }),
+
+  addPieceNote: (pieceId, note) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).map((p) =>
+            p.id === pieceId ? { ...p, pieceNotes: [...p.pieceNotes, note], updatedAt: Date.now() } : p
+          ),
+        },
+      };
+    }),
+
+  updatePieceNote: (pieceId, noteId, updates) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).map((p) =>
+            p.id === pieceId
+              ? {
+                  ...p,
+                  pieceNotes: p.pieceNotes.map((n) => (n.id === noteId ? { ...n, ...updates } : n)),
+                  updatedAt: Date.now(),
+                }
+              : p
+          ),
+        },
+      };
+    }),
+
+  deletePieceNote: (pieceId, noteId) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).map((p) =>
+            p.id === pieceId
+              ? { ...p, pieceNotes: p.pieceNotes.filter((n) => n.id !== noteId), updatedAt: Date.now() }
+              : p
+          ),
+        },
+      };
+    }),
+
+  addPieceRelation: (pieceId, relatedId) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).map((p) =>
+            p.id === pieceId && !p.relations.includes(relatedId)
+              ? { ...p, relations: [...p.relations, relatedId], updatedAt: Date.now() }
+              : p
+          ),
+        },
+      };
+    }),
+
+  removePieceRelation: (pieceId, relatedId) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieces: (s.project.pieces ?? []).map((p) =>
+            p.id === pieceId
+              ? { ...p, relations: p.relations.filter((r) => r !== relatedId), updatedAt: Date.now() }
+              : p
+          ),
+        },
+      };
+    }),
+
+  // ── Piece Types ───────────────────────────────────────────────────────────
+
+  addPieceType: (type) =>
+    set((s) => {
+      if (!s.project) return {};
+      const existing = s.project.pieceTypes ?? DEFAULT_PIECE_TYPES;
+      return { project: { ...s.project, pieceTypes: [...existing, type] } };
+    }),
+
+  updatePieceType: (id, updates) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieceTypes: (s.project.pieceTypes ?? DEFAULT_PIECE_TYPES).map((t) =>
+            t.id === id ? { ...t, ...updates } : t
+          ),
+        },
+      };
+    }),
+
+  deletePieceType: (id) =>
+    set((s) => {
+      if (!s.project) return {};
+      return {
+        project: {
+          ...s.project,
+          pieceTypes: (s.project.pieceTypes ?? DEFAULT_PIECE_TYPES).filter((t) => t.id !== id),
         },
       };
     }),
