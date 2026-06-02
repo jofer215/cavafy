@@ -1,7 +1,7 @@
 "use client";
 
 import { useProjectStore } from "@/store/project";
-import { DEFAULT_PIECE_TYPES } from "@/lib/project/schema";
+import { getPieceTypes } from "@/lib/project/schema";
 import { getPieceIcon } from "./pieceIcons";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ export function PieceSimpleView() {
   if (!project) return null;
 
   const pieces = project.pieces ?? [];
-  const pieceTypes = project.pieceTypes ?? DEFAULT_PIECE_TYPES;
+  const typeMap = new Map(getPieceTypes(project).map((t) => [t.id, t]));
 
   if (pieces.length === 0) {
     return (
@@ -23,7 +23,7 @@ export function PieceSimpleView() {
   return (
     <div className="flex-1 overflow-y-auto">
       {pieces.map((piece) => {
-        const type = pieceTypes.find((t) => t.id === piece.pieceType);
+        const type = typeMap.get(piece.pieceType);
         const Icon = getPieceIcon(type?.icon ?? "Circle");
         const selected = selectedPieceId === piece.id;
 

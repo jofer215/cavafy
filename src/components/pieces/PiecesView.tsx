@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useProjectStore } from "@/store/project";
-import { DEFAULT_PIECE_TYPES, Piece } from "@/lib/project/schema";
+import { getPieceTypes, Piece } from "@/lib/project/schema";
 import { PieceBoardView } from "./PieceBoardView";
 import { PieceDetailedView } from "./PieceDetailedView";
 import { PieceSimpleView } from "./PieceSimpleView";
 import { PieceTypesView } from "./PieceTypesView";
 import { cn } from "@/lib/utils";
 import { BookMarked, Plus, X } from "lucide-react";
+import { generateId } from "@/lib/utils";
 
 type SubView = "board" | "detailed" | "simple" | "types";
 
@@ -49,16 +50,16 @@ export function PiecesView({ projectId: _projectId }: PiecesViewProps) {
 
   if (!project) return null;
 
-  const pieceTypes = project.pieceTypes ?? DEFAULT_PIECE_TYPES;
+  const pieceTypes = getPieceTypes(project);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
     const piece: Piece = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: newName.trim(),
       alternativeNames: [],
       pieceType: newType,
-      pieceNotes: [{ id: crypto.randomUUID(), title: "Description", body: "" }],
+      pieceNotes: [{ id: generateId(), title: "Description", body: "" }],
       tags: [],
       relations: [],
       createdAt: Date.now(),

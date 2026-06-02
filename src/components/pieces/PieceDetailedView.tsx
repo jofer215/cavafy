@@ -1,7 +1,7 @@
 "use client";
 
 import { useProjectStore } from "@/store/project";
-import { DEFAULT_PIECE_TYPES } from "@/lib/project/schema";
+import { getPieceTypes } from "@/lib/project/schema";
 import { getPieceIcon } from "./pieceIcons";
 import { Link2, StickyNote, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ export function PieceDetailedView() {
   if (!project) return null;
 
   const pieces = project.pieces ?? [];
-  const pieceTypes = project.pieceTypes ?? DEFAULT_PIECE_TYPES;
+  const typeMap = new Map(getPieceTypes(project).map((t) => [t.id, t]));
 
   if (pieces.length === 0) {
     return (
@@ -24,7 +24,7 @@ export function PieceDetailedView() {
   return (
     <div className="flex-1 overflow-y-auto">
       {pieces.map((piece) => {
-        const type = pieceTypes.find((t) => t.id === piece.pieceType);
+        const type = typeMap.get(piece.pieceType);
         const Icon = getPieceIcon(type?.icon ?? "Circle");
         const selected = selectedPieceId === piece.id;
 
