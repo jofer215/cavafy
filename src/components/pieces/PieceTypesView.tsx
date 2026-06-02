@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useProjectStore } from "@/store/project";
-import { DEFAULT_PIECE_TYPES, PieceType } from "@/lib/project/schema";
+import { getPieceTypes, PieceType } from "@/lib/project/schema";
+import { generateId } from "@/lib/utils";
 import { getPieceIcon, PIECE_ICON_OPTIONS } from "./pieceIcons";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
 
@@ -14,14 +15,15 @@ export function PieceTypesView() {
 
   if (!project) return null;
 
-  const allTypes = project.pieceTypes ?? DEFAULT_PIECE_TYPES;
-  const builtIn = allTypes.filter((t) => t.builtIn);
-  const custom = allTypes.filter((t) => !t.builtIn);
+  const [builtIn, custom] = getPieceTypes(project).reduce<[PieceType[], PieceType[]]>(
+    ([b, c], t) => t.builtIn ? [[...b, t], c] : [b, [...c, t]],
+    [[], []]
+  );
 
   const handleAdd = async () => {
     if (!draft.label.trim()) return;
     addPieceType({
-      id: crypto.randomUUID(),
+      id: generateId(),
       label: draft.label.trim(),
       icon: draft.icon,
       builtIn: false,

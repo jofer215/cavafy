@@ -1,7 +1,7 @@
 "use client";
 
 import { useProjectStore } from "@/store/project";
-import { Piece, DEFAULT_PIECE_TYPES } from "@/lib/project/schema";
+import { Piece, PieceType, getPieceTypes } from "@/lib/project/schema";
 import { getPieceIcon } from "./pieceIcons";
 import { Plus, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ export function PieceBoardView({ onNewPiece }: PieceBoardViewProps) {
   if (!project) return null;
 
   const pieces = project.pieces ?? [];
-  const pieceTypes = project.pieceTypes ?? DEFAULT_PIECE_TYPES;
+  const typeMap = new Map(getPieceTypes(project).map((t) => [t.id, t]));
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -24,7 +24,7 @@ export function PieceBoardView({ onNewPiece }: PieceBoardViewProps) {
           <PieceCard
             key={piece.id}
             piece={piece}
-            pieceTypes={pieceTypes}
+            type={typeMap.get(piece.pieceType)}
             selected={selectedPieceId === piece.id}
             onSelect={() => setSelectedPiece(piece.id)}
           />
@@ -48,17 +48,13 @@ export function PieceBoardView({ onNewPiece }: PieceBoardViewProps) {
 }
 
 function PieceCard({
-  piece,
-  pieceTypes,
-  selected,
-  onSelect,
+  piece, type, selected, onSelect,
 }: {
   piece: Piece;
-  pieceTypes: { id: string; label: string; icon: string }[];
+  type: PieceType | undefined;
   selected: boolean;
   onSelect: () => void;
 }) {
-  const type = pieceTypes.find((t) => t.id === piece.pieceType);
   const Icon = getPieceIcon(type?.icon ?? "Circle");
   const relationCount = piece.relations.length;
 

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useProjectStore } from "@/store/project";
-import { Piece, PieceNote, DEFAULT_PIECE_TYPES, findNode } from "@/lib/project/schema";
+import { Piece, PieceNote, getPieceTypes, findNode } from "@/lib/project/schema";
 import { getPieceIcon } from "@/components/pieces/pieceIcons";
 import { cn } from "@/lib/utils";
 import { Pencil, Plus, MoreHorizontal, Trash2, X, Link2 } from "lucide-react";
+import { generateId } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 
 type TopTab = "details" | "appears";
@@ -28,7 +29,7 @@ export function PieceInspector({ piece }: PieceInspectorProps) {
   const [showRelationPicker, setShowRelationPicker] = useState(false);
   const [relationSearch, setRelationSearch] = useState("");
 
-  const pieceTypes = project?.pieceTypes ?? DEFAULT_PIECE_TYPES;
+  const pieceTypes = getPieceTypes(project!);
   const type = pieceTypes.find((t) => t.id === piece.pieceType);
   const Icon = getPieceIcon(type?.icon ?? "Circle");
 
@@ -180,7 +181,7 @@ function PieceNotesTab({ piece }: { piece: Piece }) {
   const { addPieceNote, updatePieceNote, deletePieceNote, save } = useProjectStore();
 
   const handleAddNote = async () => {
-    addPieceNote(piece.id, { id: crypto.randomUUID(), title: "New Note", body: "" });
+    addPieceNote(piece.id, { id: generateId(), title: "New Note", body: "" });
     await save();
   };
 
@@ -284,15 +285,17 @@ function RelationsTab({ piece, showPicker, setShowPicker, search, setSearch }: {
 }) {
   const { project, addPieceRelation, removePieceRelation, save } = useProjectStore();
   const pieces = project?.pieces ?? [];
-  const pieceTypes = project?.pieceTypes ?? DEFAULT_PIECE_TYPES;
-  const related = piece.relations.map((id) => pieces.find((p) => p.id === id)).filter(Boolean) as typeof pieces;
-  const candidates = pieces.filter((p) => p.id !== piece.id && !piece.relations.includes(p.id) &&
+  const typeMap = new Map(getPieceTypes(project!).map((t) => [t.id, t]));
+  const pieceMap = new Map(pieces.map((p) => [p.id, p]));
+  const relationSet = new Set(piece.relations);
+  const related = piece.relations.map((id) => pieceMap.get(id)).filter(Boolean) as typeof pieces;
+  const candidates = pieces.filter((p) => p.id !== piece.id && !relationSet.has(p.id) &&
     p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex flex-col gap-2">
       {related.map((rel) => {
-        const t = pieceTypes.find((x) => x.id === rel.pieceType);
+        const t = typeMap.get(rel.pieceType);
         const Icon = getPieceIcon(t?.icon ?? "Circle");
         return (
           <div key={rel.id} className="flex items-center gap-2 group">
@@ -313,7 +316,7 @@ function RelationsTab({ piece, showPicker, setShowPicker, search, setSearch }: {
             placeholder="Search pieces…" className="text-xs bg-transparent outline-none border-b pb-1 mb-1"
             style={{ borderColor: "var(--border)", color: "var(--text)" }} />
           {candidates.slice(0, 8).map((c) => {
-            const t = pieceTypes.find((x) => x.id === c.pieceType);
+            const t = typeMap.get(c.pieceType);
             const Icon = getPieceIcon(t?.icon ?? "Circle");
             return (
               <button key={c.id} onClick={async () => { addPieceRelation(piece.id, c.id); await save(); setShowPicker(false); setSearch(""); }}
@@ -390,33 +393,19 @@ function AppearsInTab({ piece, onDocClick }: { piece: Piece; onDocClick: (id: st
   const { project } = useProjectStore();
   if (!project) return null;
 
-  const pieceTypes = project.pieceTypes ?? DEFAULT_PIECE_TYPES;
-  const type = pieceTypes.find((t) => t.id === piece.pieceType);
+  const TAG_CATEGORY: Record<string, string> = { character: "char", place: "location", object: "object" };
+  const category = TAG_CATEGORY[piece.pieceType];
+  const allNamesSet = new Set([piece.name, ...piece.alternativeNames].map((n) => n.toLowerCase()));
 
-  // Map piece type to DocumentTags category
-  const tagCategory: Record<string, string> = {
-    character: "char",
-    place: "location",
-    object: "object",
-  };
-  const category = tagCategory[piece.pieceType];
-  const nameLower = piece.name.toLowerCase();
-  const allNames = [piece.name, ...piece.alternativeNames].map((n) => n.toLowerCase());
-
-  const matchingNodeIds = Object.entries(project.metadata).filter(([, meta]) => {
-    // Primary: check document tags for this piece type
-    if (category && meta.tags) {
-      const tagValues = (meta.tags as Record<string, string[]>)[category] ?? [];
-      if (tagValues.some((v) => allNames.includes(v.toLowerCase()))) return true;
-    }
-    // Fallback: synopsis text search
-    if (meta.synopsis && allNames.some((n) => meta.synopsis!.toLowerCase().includes(n))) return true;
-    return false;
-  }).map(([id]) => id);
-
-  const matchingNodes = matchingNodeIds
-    .map((id) => findNode(project.binder, id))
-    .filter(Boolean);
+  const matchingNodes = Object.entries(project.metadata).flatMap(([id, meta]) => {
+    const tagMatch = category && meta.tags &&
+      ((meta.tags as Record<string, string[]>)[category] ?? []).some((v) => allNamesSet.has(v.toLowerCase()));
+    const synopsisMatch = meta.synopsis &&
+      [...allNamesSet].some((n) => meta.synopsis!.toLowerCase().includes(n));
+    if (!tagMatch && !synopsisMatch) return [];
+    const node = findNode(project.binder, id);
+    return node ? [node] : [];
+  });
 
   return (
     <div className="flex-1 overflow-y-auto p-3">

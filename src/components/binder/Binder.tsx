@@ -31,8 +31,6 @@ export function Binder() {
   if (!project) return null;
 
   const addItem = async (type: "document" | "folder") => {
-    const title = type === "folder" ? "New Folder" : "Untitled Scene";
-
     // Try to add inside selected folder, else at top level
     const parentId = (() => {
       if (!selectedNodeId) return null;
@@ -47,6 +45,13 @@ export function Binder() {
         return null;
       };
       return findFolder(project.binder);
+    })();
+
+    const title = (() => {
+      if (type === "folder") return "New Folder";
+      const parentName = (parentId ? findNode(project.binder, parentId)?.title : null)?.toLowerCase() ?? "";
+      if (parentName.includes("research") || parentName.includes("note")) return "Untitled Note";
+      return "Untitled Scene";
     })();
 
     // Resolve the Drive folder ID for the parent binder folder
@@ -155,8 +160,6 @@ export function Binder() {
         {/* ── Pieces section ─────────────────────────────── */}
         <PiecesSection />
 
-        {/* ── Stub sections ──────────────────────────────── */}
-        <StubSections />
       </nav>
     </aside>
   );
@@ -256,29 +259,3 @@ function PiecesSection() {
   );
 }
 
-// TODO: Future sections — no logic yet, navigation placeholders only
-const STUB_ITEMS = [
-  "Research Board",
-  "Planning Board",
-  "Manuscript Board",
-  "Goals",
-  "Project Scratchpad",
-  "Stash",
-  "Version History",
-];
-
-function StubSections() {
-  return (
-    <div className="border-t mt-1 pt-2 pb-4" style={{ borderColor: "var(--border)" }}>
-      {STUB_ITEMS.map((label) => (
-        <div
-          key={label}
-          className="px-6 py-1.5 text-xs"
-          style={{ color: "var(--text-faint)" }}
-        >
-          {label}
-        </div>
-      ))}
-    </div>
-  );
-}

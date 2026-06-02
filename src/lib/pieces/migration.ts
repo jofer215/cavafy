@@ -1,4 +1,5 @@
 import { ProjectData, BinderNode, Piece, PieceNote } from "@/lib/project/schema";
+import { generateId } from "@/lib/utils";
 
 const MIGRATE_FOLDERS: Record<string, string> = {
   Characters: "character",
@@ -6,24 +7,17 @@ const MIGRATE_FOLDERS: Record<string, string> = {
 };
 
 function makeDescriptionNote(): PieceNote {
-  return { id: crypto.randomUUID(), title: "Description", body: "" };
+  return { id: generateId(), title: "Description", body: "" };
 }
 
-function removeDocumentChildren(
-  nodes: BinderNode[],
-  idsToRemove: Set<string>
-): BinderNode[] {
+function removeNodes(nodes: BinderNode[], idsToRemove: Set<string>): BinderNode[] {
   return nodes
     .filter((n) => !idsToRemove.has(n.id))
-    .map((n) =>
-      n.children
-        ? { ...n, children: removeDocumentChildren(n.children, idsToRemove) }
-        : n
-    );
+    .map((n) => n.children ? { ...n, children: removeNodes(n.children, idsToRemove) } : n);
 }
 
 export function migrateBinderFoldersToPieces(project: ProjectData): ProjectData | null {
-  if (project.settings.placesImported) return null;
+  if (project.migrations?.placesImported) return null;
 
   const newPieces: Piece[] = [];
   const migratedNodeIds = new Set<string>();
@@ -33,10 +27,9 @@ export function migrateBinderFoldersToPieces(project: ProjectData): ProjectData 
     if (node.type !== "folder" || !node.children) return;
     const pieceType = MIGRATE_FOLDERS[node.title];
     if (pieceType) {
-      const docChildren = node.children.filter((c) => c.type === "document");
-      docChildren.forEach((doc) => {
+      node.children.filter((c) => c.type === "document").forEach((doc) => {
         newPieces.push({
-          id: crypto.randomUUID(),
+          id: generateId(),
           name: doc.title,
           alternativeNames: [],
           pieceType,
@@ -48,7 +41,6 @@ export function migrateBinderFoldersToPieces(project: ProjectData): ProjectData 
         });
         migratedNodeIds.add(doc.id);
       });
-      // If all children are being migrated, mark folder for removal too
       const remaining = node.children.filter((c) => !migratedNodeIds.has(c.id));
       if (remaining.length === 0) emptyFolderIds.add(node.id);
     }
@@ -57,21 +49,17 @@ export function migrateBinderFoldersToPieces(project: ProjectData): ProjectData 
 
   project.binder.forEach(scanNode);
 
+  const migrations = { ...project.migrations, placesImported: true };
+
   if (newPieces.length === 0) {
-    // Nothing to migrate — just mark as done so we don't re-check every load
-    return {
-      ...project,
-      settings: { ...project.settings, placesImported: true },
-    };
+    return { ...project, migrations };
   }
 
   const allRemove = new Set([...migratedNodeIds, ...emptyFolderIds]);
-  const updatedBinder = removeDocumentChildren(project.binder, allRemove);
-
   return {
     ...project,
-    binder: updatedBinder,
+    binder: removeNodes(project.binder, allRemove),
     pieces: [...(project.pieces ?? []), ...newPieces],
-    settings: { ...project.settings, placesImported: true },
+    migrations,
   };
 }

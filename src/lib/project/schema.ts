@@ -62,7 +62,6 @@ export interface ProjectSettings {
   targetWordCount?: number;
   authorName?: string;
   dailyWordCountGoal?: number;
-  placesImported?: boolean;
 }
 
 // ── Plot Grid ──────────────────────────────────────────────────────────────
@@ -150,12 +149,17 @@ export interface ProjectData {
   collections?: Collection[];
   snapshots?: Record<string, Snapshot[]>;       // nodeId -> snapshots
   wordCountHistory?: Record<string, number>;    // YYYY-MM-DD -> total project word count
+  migrations?: Record<string, boolean>;         // migration key -> applied flag
 }
 
 export function getTotalWordCount(project: ProjectData): number {
   return Object.values(project.metadata).reduce((sum, m) => {
     return sum + ((m.customFields?._wordCount as number) ?? 0);
   }, 0);
+}
+
+export function getPieceTypes(project: ProjectData): PieceType[] {
+  return project.pieceTypes ?? DEFAULT_PIECE_TYPES;
 }
 
 export const DEFAULT_STATUSES: StatusOption[] = [

@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, Collection, Piece, PieceNote, PieceType, DEFAULT_PIECE_TYPES, getTotalWordCount } from "@/lib/project/schema";
+import { ProjectData, BinderNode, DocumentMetadata, findNode, PlotLine, PlotGrid, Snapshot, Collection, Piece, PieceNote, PieceType, getPieceTypes, getTotalWordCount } from "@/lib/project/schema";
+import { generateId } from "@/lib/utils";
 import { pendingQueue } from "@/lib/cache/db";
 
 export type ViewMode = "single" | "union";
@@ -152,7 +153,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   addPlotLine: (name, color) =>
     set((s) => {
       if (!s.project) return {};
-      const line: PlotLine = { id: crypto.randomUUID(), name, color };
+      const line: PlotLine = { id: generateId(), name, color };
       const existing = s.project.plotGrid ?? { plotLines: [], cells: {} };
       return {
         project: {
@@ -199,7 +200,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set((s) => {
       if (!s.project) return {};
       const collection: Collection = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         name: name.trim(),
         nodeIds: [],
         createdAt: new Date().toISOString(),
@@ -372,8 +373,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   addPieceType: (type) =>
     set((s) => {
       if (!s.project) return {};
-      const existing = s.project.pieceTypes ?? DEFAULT_PIECE_TYPES;
-      return { project: { ...s.project, pieceTypes: [...existing, type] } };
+      return { project: { ...s.project, pieceTypes: [...getPieceTypes(s.project), type] } };
     }),
 
   updatePieceType: (id, updates) =>
@@ -382,7 +382,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return {
         project: {
           ...s.project,
-          pieceTypes: (s.project.pieceTypes ?? DEFAULT_PIECE_TYPES).map((t) =>
+          pieceTypes: getPieceTypes(s.project).map((t: PieceType) =>
             t.id === id ? { ...t, ...updates } : t
           ),
         },
@@ -395,7 +395,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return {
         project: {
           ...s.project,
-          pieceTypes: (s.project.pieceTypes ?? DEFAULT_PIECE_TYPES).filter((t) => t.id !== id),
+          pieceTypes: getPieceTypes(s.project).filter((t: PieceType) => t.id !== id),
         },
       };
     }),
