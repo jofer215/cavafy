@@ -26,7 +26,7 @@ interface WorkspaceShellProps {
 }
 
 export function WorkspaceShell({ initialProject, initialView = "editor" }: WorkspaceShellProps) {
-  const { setProject, save } = useProjectStore();
+  const { setProject, save, selectedNodeId } = useProjectStore();
   const [showBinder, setShowBinder] = useState(true);
   const [showInspector, setShowInspector] = useState(true);
   const [activeView, setActiveView] = useState<WorkspaceView>(initialView);
@@ -49,6 +49,15 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
     window.addEventListener("cavafy:set-view", handler);
     return () => window.removeEventListener("cavafy:set-view", handler);
   }, []);
+
+  // Selecting a binder node while in a non-editor view switches back to editor
+  useEffect(() => {
+    if (!selectedNodeId) return;
+    if (activeView === "pieces" || activeView === "outliner" || activeView === "plot-grid") {
+      setActiveView("editor");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNodeId]);
 
   const navItems: { view: WorkspaceView; icon: React.ReactNode; label: string }[] = [
     { view: "editor",      icon: <FileText size={14} />,     label: "Editor"      },
