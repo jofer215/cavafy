@@ -101,13 +101,6 @@ export function PiecesView({ projectId: _projectId }: PiecesViewProps) {
           >
             <Plus size={12} /> Add New
           </button>
-          <button
-            onClick={() => alert("Import coming soon")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors hover:bg-[var(--bg-panel)]"
-            style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
-          >
-            Import
-          </button>
         </div>
       </div>
 
