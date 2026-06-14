@@ -360,7 +360,7 @@ export function OutlinerView() {
             <tr>
               <th style={th}>Title</th>
               <th style={th}>Status</th>
-              <th style={th}>Label</th>
+              <th style={th}>Type</th>
               <th style={{ ...th, textAlign: "right" }}>Words</th>
               <th style={th}>Synopsis</th>
               <th style={th}>POV</th>
