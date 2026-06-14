@@ -225,7 +225,9 @@ PRs welcome. Open an issue first for anything substantial. The plan file at `.cl
 
 ## License
 
-GPL v3
+GPL v3. Cavafy is free software: you can run it, study it, modify it, and distribute modified versions under the same license.
+
+**A note on software freedom:** Cavafy currently requires Google Drive for storage, which is a dependency on a proprietary service. This is an acknowledged limitation — it means users cannot run a fully free stack without relying on Google's closed infrastructure. Support for self-hosted and local storage backends is a planned future goal, so that Cavafy can be run entirely on free software.
 
 ---
 
