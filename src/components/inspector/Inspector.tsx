@@ -11,7 +11,7 @@ import { SnapshotsPanel } from "./SnapshotsPanel";
 import { PieceInspector } from "./PieceInspector";
 
 const TABS = [
-  { id: "meta",       label: "Meta"       },
+  { id: "meta",       label: "Info"       },
   { id: "tags",       label: "Tags"       },
   { id: "synopsis",   label: "Synopsis"   },
   { id: "notes",      label: "Notes"      },
@@ -110,7 +110,12 @@ export function Inspector() {
         )}
 
         {tab === "tags" && selectedNodeId && isDocument && (
-          <TagsPanel nodeId={selectedNodeId} />
+          <>
+            <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>
+              Tag what&apos;s in this scene — characters, locations, plot threads, and more.
+            </p>
+            <TagsPanel nodeId={selectedNodeId} />
+          </>
         )}
         {tab === "tags" && (!selectedNodeId || !isDocument) && (
           <p className="text-xs" style={{ color: "var(--text-faint)" }}>
@@ -175,9 +180,12 @@ function MetaTab({ nodeId, meta }: { nodeId: string; meta: DocumentMetadata }) {
       )}
 
       <div>
-        <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-faint)" }}>
+        <label className="text-xs font-medium mb-0.5 block" style={{ color: "var(--text-faint)" }}>
           Status
         </label>
+        <p className="text-xs mb-2" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
+          Your workflow stage
+        </p>
         <div className="flex flex-wrap gap-1.5">
           {project.statuses.map((s) => (
             <button
@@ -198,9 +206,12 @@ function MetaTab({ nodeId, meta }: { nodeId: string; meta: DocumentMetadata }) {
       </div>
 
       <div>
-        <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-faint)" }}>
-          Label
+        <label className="text-xs font-medium mb-0.5 block" style={{ color: "var(--text-faint)" }}>
+          Type
         </label>
+        <p className="text-xs mb-2" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
+          What kind of document this is
+        </p>
         <div className="flex flex-wrap gap-1.5">
           {project.labels.map((l) => (
             <button
