@@ -70,11 +70,9 @@ export function Inspector() {
 
   return (
     <aside
-      className="flex flex-col h-full border-l shrink-0"
+      className="flex flex-col h-full w-full"
       style={{
-        width: 248,
         backgroundColor: "var(--bg-sidebar)",
-        borderColor: "var(--border)",
       }}
     >
       {/* Header */}
