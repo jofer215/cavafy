@@ -29,10 +29,10 @@ Write from anywhere — Mac, iPad, Linux, or any browser — with your work alwa
 
 ### Phase 2 — Organization & Views ✅ Complete
 - Corkboard, Outliner, Plot Grid
-- Label color-coding in binder
+- Type color-coding in binder
 - Union view (continuous multi-document scroll)
 - Snapshots, Collections, Daily word count goals
-- Pieces — world-building records (characters, places, objects)
+- Pieces — world-building records (characters, places, objects, and custom types)
 - Offline support — service worker + IndexedDB read cache + write queue
 - Google Workspace Marketplace listing
 
@@ -45,9 +45,13 @@ Write from anywhere — Mac, iPad, Linux, or any browser — with your work alwa
 
 ### Phase 4 — Power Features
 - [ ] Compile & Export → PDF, DOCX, ePub
-- [ ] Read-aloud (text-to-speech)
-- [ ] ProWritingAid integration
 - [ ] Templates root folder
+- [ ] Writing statistics — word count history, session tracking, daily goals calendar
+- [ ] To-Do List — tasks scoped to chapter, manuscript, or project
+- [ ] Research Board — collect reference material, links, and images per project
+- [ ] Planning Board — outlining and story structure tools
+- [ ] Manuscript Board — kanban-style scene and chapter status tracker
+- [ ] Alternative storage backends — local filesystem and self-hosted options
 
 ---
 
