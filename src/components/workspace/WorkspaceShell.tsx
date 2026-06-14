@@ -33,6 +33,7 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
   const [showBinder, setShowBinder] = useState(true);
   const [showInspector, setShowInspector] = useState(true);
   const [activeView, setActiveView] = useState<WorkspaceView>(initialView);
+  const [inspectorWidth, setInspectorWidth] = useState(248);
 
   useEffect(() => {
     setProject(initialProject);
@@ -45,6 +46,22 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProject]);
+
+  const startResizingInspector = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = inspectorWidth;
+    const onMove = (ev: MouseEvent) => {
+      const delta = startX - ev.clientX;
+      setInspectorWidth(Math.min(600, Math.max(200, startWidth + delta)));
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   // Allow Binder to switch the active view via custom event
   useEffect(() => {
@@ -149,14 +166,14 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
           <>
             {showBinder && <Binder />}
             <EditorPanel />
-            {showInspector && <Inspector />}
+            {showInspector && <ResizableInspector width={inspectorWidth} onStartResize={startResizingInspector} />}
           </>
         )}
         {activeView === "corkboard" && (
           <>
             {showBinder && <Binder />}
             <CorkboardView />
-            {showInspector && <Inspector />}
+            {showInspector && <ResizableInspector width={inspectorWidth} onStartResize={startResizingInspector} />}
           </>
         )}
         {activeView === "outliner" && <OutlinerView />}
@@ -171,9 +188,31 @@ export function WorkspaceShell({ initialProject, initialView = "editor" }: Works
           <>
             {showBinder && <Binder />}
             <PiecesView projectId={initialProject.id} />
-            {showInspector && <Inspector />}
+            {showInspector && <ResizableInspector width={inspectorWidth} onStartResize={startResizingInspector} />}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ResizableInspector({
+  width,
+  onStartResize,
+}: {
+  width: number;
+  onStartResize: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div className="flex shrink-0 h-full" style={{ width }}>
+      {/* Drag handle */}
+      <div
+        onMouseDown={onStartResize}
+        className="w-1 shrink-0 h-full cursor-col-resize hover:bg-[var(--accent)] transition-colors"
+        style={{ backgroundColor: "var(--border)" }}
+      />
+      <div className="flex-1 min-w-0">
+        <Inspector />
       </div>
     </div>
   );
