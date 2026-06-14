@@ -33,7 +33,26 @@ export interface CustomMetadataField {
   options?: string[];
 }
 
-export type TagCategory = "pov" | "char" | "location" | "plot" | "time" | "object" | "entity" | "custom";
+export type TagCategory = "pov" | "char" | "location" | "plot" | "time" | "object" | "custom";
+
+export interface TagDefinition {
+  cat: TagCategory;
+  label: string;
+  color: string;
+  placeholder: string;
+}
+
+export const TAG_DEFINITIONS: TagDefinition[] = [
+  { cat: "pov",      label: "POV",      color: "#6366f1", placeholder: "character name…"  },
+  { cat: "char",     label: "Chars",    color: "#ec4899", placeholder: "add character…"   },
+  { cat: "location", label: "Location", color: "#0ea5e9", placeholder: "add place…"       },
+  { cat: "plot",     label: "Plot",     color: "#f59e0b", placeholder: "add arc/subplot…" },
+  { cat: "time",     label: "Time",     color: "#22c55e", placeholder: "e.g. Week 3…"     },
+  { cat: "object",   label: "Objects",  color: "#f97316", placeholder: "add object…"      },
+  { cat: "custom",   label: "Custom",   color: "#94a3b8", placeholder: "add tag…"         },
+];
+
+export const TAG_CATEGORIES: TagCategory[] = TAG_DEFINITIONS.map((d) => d.cat);
 
 export interface DocumentTags {
   pov?: string[];
@@ -42,7 +61,6 @@ export interface DocumentTags {
   plot?: string[];
   time?: string[];
   object?: string[];
-  entity?: string[];
   custom?: string[];
 }
 

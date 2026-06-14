@@ -2,21 +2,14 @@
 
 import { useProjectStore } from "@/store/project";
 import { useReferenceIndex, type ReferenceEntry } from "@/hooks/useReferenceIndex";
-import { TagCategory } from "@/lib/project/schema";
+import { TagCategory, TAG_DEFINITIONS } from "@/lib/project/schema";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 
-const CAT_META: Record<TagCategory, { label: string; color: string }> = {
-  pov:      { label: "POV",      color: "#6366f1" },
-  char:     { label: "Chars",    color: "#ec4899" },
-  location: { label: "Location", color: "#0ea5e9" },
-  plot:     { label: "Plot",     color: "#f59e0b" },
-  time:     { label: "Time",     color: "#22c55e" },
-  object:   { label: "Objects",  color: "#f97316" },
-  entity:   { label: "Entities", color: "#8b5cf6" },
-  custom:   { label: "Custom",   color: "#94a3b8" },
-};
+const CAT_META = Object.fromEntries(
+  TAG_DEFINITIONS.map((d) => [d.cat, { label: d.label, color: d.color }])
+) as Record<TagCategory, { label: string; color: string }>;
 
 function TagSection({
   cat,
