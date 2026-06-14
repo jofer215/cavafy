@@ -5,7 +5,7 @@
 
 import {
   ChevronRight, FileText, Folder, FolderOpen, FolderArchive,
-  MoreHorizontal, EyeOff, Eye,
+  MoreHorizontal, EyeOff, Eye, Trash2,
 } from "lucide-react";
 import { BinderNode } from "@/lib/project/schema";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,7 @@ interface BinderItemProps {
 }
 
 export function BinderItem({ node, depth = 0 }: BinderItemProps) {
-  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, updateBinder, project, save, addToCollection, removeFromCollection } =
+  const { selectedNodeId, setSelectedNode, toggleExpanded, toggleActive, updateBinder, deleteNode, project, save, addToCollection, removeFromCollection } =
     useProjectStore();
   const [renaming, setRenaming] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -208,6 +208,23 @@ export function BinderItem({ node, depth = 0 }: BinderItemProps) {
               >
                 {isInactive ? <Eye size={12} /> : <EyeOff size={12} />}
                 {isInactive ? "Mark active" : "Mark inactive"}
+              </button>
+
+              <div className="mx-3 my-1 border-t" style={{ borderColor: "var(--border)" }} />
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 text-xs hover:bg-[var(--bg-panel)] transition-colors"
+                style={{ color: "#ef4444" }}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  const label = isFolder ? "folder and all its contents" : "document";
+                  if (!confirm(`Delete "${node.title}"? This will remove the ${label} from the binder. The file will remain in Google Drive.`)) return;
+                  deleteNode(node.id);
+                  await save();
+                }}
+              >
+                <Trash2 size={12} />
+                Delete
               </button>
 
               {/* Add to / remove from collections — documents only */}

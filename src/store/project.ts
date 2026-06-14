@@ -37,6 +37,7 @@ interface ProjectStore {
   setInspectorTab: (tab: ProjectStore["inspectorTab"]) => void;
 
   updateBinder: (binder: BinderNode[]) => void;
+  deleteNode: (id: string) => void;
   toggleExpanded: (id: string) => void;
   toggleActive: (id: string) => void;
   reorderChildren: (parentId: string | null, fromIndex: number, toIndex: number) => void;
@@ -106,6 +107,19 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   updateBinder: (binder) =>
     set((s) => s.project ? { project: { ...s.project, binder } } : {}),
+
+  deleteNode: (id) =>
+    set((s) => {
+      if (!s.project) return {};
+      const removeNode = (nodes: BinderNode[]): BinderNode[] =>
+        nodes.filter((n) => n.id !== id).map((n) =>
+          n.children ? { ...n, children: removeNode(n.children) } : n
+        );
+      return {
+        project: { ...s.project, binder: removeNode(s.project.binder) },
+        selectedNodeId: s.selectedNodeId === id ? null : s.selectedNodeId,
+      };
+    }),
 
   toggleExpanded: (id) =>
     set((s) =>
