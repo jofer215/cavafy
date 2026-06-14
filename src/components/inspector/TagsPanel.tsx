@@ -1,19 +1,10 @@
 "use client";
 
 import { useProjectStore } from "@/store/project";
-import { DocumentTags, TagCategory } from "@/lib/project/schema";
+import { DocumentTags, TagCategory, TAG_DEFINITIONS } from "@/lib/project/schema";
 import { X, Plus } from "lucide-react";
 import { useState, KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
-
-const TAG_DEFS: { cat: TagCategory; label: string; color: string; placeholder: string }[] = [
-  { cat: "pov",      label: "POV",      color: "#6366f1", placeholder: "character name…" },
-  { cat: "char",     label: "Chars",    color: "#ec4899", placeholder: "add character…" },
-  { cat: "location", label: "Location", color: "#0ea5e9", placeholder: "add place…" },
-  { cat: "plot",     label: "Plot",     color: "#f59e0b", placeholder: "add arc/subplot…" },
-  { cat: "time",     label: "Time",     color: "#22c55e", placeholder: "e.g. Week 3…" },
-  { cat: "object",   label: "Objects",  color: "#f97316", placeholder: "add object…" },
-];
 
 function TagChip({ value, color, onRemove }: { value: string; color: string; onRemove: () => void }) {
   return (
@@ -134,7 +125,7 @@ export function TagsPanel({ nodeId }: TagsPanelProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {TAG_DEFS.map((def) => (
+      {TAG_DEFINITIONS.map((def) => (
         <TagRow
           key={def.cat}
           nodeId={nodeId}

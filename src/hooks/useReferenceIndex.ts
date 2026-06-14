@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useProjectStore } from "@/store/project";
-import { collectDocuments, TagCategory } from "@/lib/project/schema";
+import { collectDocuments, TagCategory, TAG_CATEGORIES } from "@/lib/project/schema";
 
 export interface ReferenceEntry {
   nodeId: string;
@@ -11,16 +11,11 @@ export interface ReferenceEntry {
 
 export type ReferenceIndex = Record<TagCategory, Record<string, ReferenceEntry[]>>;
 
-const CATEGORIES: TagCategory[] = ["pov", "char", "location", "plot", "time", "object", "entity", "custom"];
-
 export function useReferenceIndex(): ReferenceIndex {
   const project = useProjectStore((s) => s.project);
 
   return useMemo(() => {
-    const index: ReferenceIndex = {
-      pov: {}, char: {}, location: {}, plot: {},
-      time: {}, object: {}, entity: {}, custom: {},
-    };
+    const index = Object.fromEntries(TAG_CATEGORIES.map((c) => [c, {}])) as ReferenceIndex;
     if (!project) return index;
 
     const docs = collectDocuments(project.binder);
@@ -28,7 +23,7 @@ export function useReferenceIndex(): ReferenceIndex {
       const meta = project.metadata[doc.id];
       if (!meta?.tags) continue;
       const entry: ReferenceEntry = { nodeId: doc.id, nodeTitle: doc.title };
-      for (const cat of CATEGORIES) {
+      for (const cat of TAG_CATEGORIES) {
         for (const val of meta.tags[cat] ?? []) {
           const key = val.toLowerCase().trim();
           if (!key) continue;

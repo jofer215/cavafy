@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { loadProject } from "@/lib/google/drive";
-import { findNode, collectDocuments, TagCategory } from "@/lib/project/schema";
+import { findNode, collectDocuments, TagCategory, TAG_CATEGORIES } from "@/lib/project/schema";
 
 // Returns a map: tagValue → [{ nodeId, nodeTitle, category }]
 export type ReferenceEntry = { nodeId: string; nodeTitle: string };
@@ -20,10 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Build an index: tagValue → list of documents that reference it, by category
-  const index: Record<TagCategory, ReferenceIndex> = {
-    pov: {}, char: {}, location: {}, plot: {},
-    time: {}, object: {}, entity: {}, custom: {},
-  };
+  const index = Object.fromEntries(TAG_CATEGORIES.map((c) => [c, {}])) as Record<TagCategory, ReferenceIndex>;
 
   const allDocs = collectDocuments(project.binder);
   for (const doc of allDocs) {
@@ -32,8 +29,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const node = findNode(project.binder, doc.id);
     if (!node) continue;
     const entry: ReferenceEntry = { nodeId: doc.id, nodeTitle: node.title };
-    const categories: TagCategory[] = ["pov", "char", "location", "plot", "time", "object", "entity", "custom"];
-    for (const cat of categories) {
+    for (const cat of TAG_CATEGORIES) {
       const values: string[] = meta.tags[cat] ?? [];
       for (const val of values) {
         const key = val.toLowerCase().trim();
