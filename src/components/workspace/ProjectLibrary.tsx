@@ -55,7 +55,15 @@ export function ProjectLibrary({ initialProjects }: ProjectLibraryProps) {
         style={{ borderColor: "var(--border)", backgroundColor: "var(--bg-sidebar)" }}
       >
         <div className="flex items-center gap-2">
-          <BookOpen size={22} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+          <a
+            href="https://www.poetryfoundation.org/poetrymagazine/poems/154998/reflections-of-an-old-man-on-writing"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="C.P. Cavafy"
+            className="hover:opacity-70 transition-opacity"
+          >
+            <BookOpen size={22} strokeWidth={1.5} style={{ color: "var(--accent)" }} />
+          </a>
           <span className="text-lg font-semibold" style={{ color: "var(--text)" }}>
             Cavafy
           </span>
