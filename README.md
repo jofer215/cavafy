@@ -10,14 +10,20 @@ Write from anywhere — Mac, iPad, Linux, or any browser — with your work alwa
 
 - **Google OAuth** — sign in with your Google account; all files live in *your* Drive, not ours
 - **Binder** — collapsible tree (folders, chapters, scenes) with drag-to-reorder, rename, active/inactive toggle, archive folder, and label color-coding
-- **TipTap editor** — distraction-free prose editor with auto-save to Google Drive every 1.5s
+- **TipTap editor** — prose editor with auto-save to Google Drive every 1.5s; documents are native Google Docs editable from any browser
 - **Union view** — select a folder to read all its scenes as one continuous scroll
-- **Inspector** — per-document status, label, synopsis, notes, tags, and references
+- **Inspector** — per-document status, label, synopsis, notes, tags, references, and snapshots
 - **Tags & References** — `@pov`, `@char`, `@location`, `@plot` etc. per scene; References panel shows every scene a tag value appears in
+- **Pieces** — world-building records for characters, places, and objects; board view, detailed list, relations, and "Appears In" linking to tagged scenes
 - **Plot Grid** — matrix of plot lines × scenes with per-cell notes
 - **Corkboard** — index card view per folder; drag to reorder scenes
 - **Outliner** — spreadsheet table: Title, Status, Label, Words, Synopsis, POV, Characters, Location
+- **Collections** — named saved groups of scenes, open together in Union view
+- **Snapshots** — named point-in-time copies of any document, restorable from Inspector
+- **Word count goals** — daily target with an 18-week streak calendar
+- **Offline support** — app shell cached by service worker; recently opened documents readable and writable offline with auto-sync on reconnect
 - **PWA** — installable on macOS, iPadOS, Linux; works in any browser without install
+- **Google Workspace Marketplace** — installable from the Workspace app launcher
 
 ## Roadmap
 
@@ -25,13 +31,13 @@ Write from anywhere — Mac, iPad, Linux, or any browser — with your work alwa
 - Corkboard, Outliner, Plot Grid
 - Label color-coding in binder
 - Union view (continuous multi-document scroll)
-- Snapshots — named point-in-time copies of any document, restorable from Inspector
-- Collections — named saved groups of scenes, open together in Union view
-- Daily word count goals + 18-week streak calendar
+- Snapshots, Collections, Daily word count goals
+- Pieces — world-building records (characters, places, objects)
+- Offline support — service worker + IndexedDB read cache + write queue
+- Google Workspace Marketplace listing
 
 ### Phase 3 — Writing Experience ← Current
 - [ ] Distraction-free mode — chrome fades as you type, returns on mouse move
-- [ ] Offline support — app shell + document read cache + write queue
 - [ ] Document merge — right-click folder → merge children into one doc
 - [ ] Split screen — two editor panels side by side
 - [ ] Dialogue Focus — fade non-speech text to gray
@@ -75,7 +81,7 @@ npm install
    - Choose **External**
    - Fill in app name, support email, developer email
    - Add scope: `https://www.googleapis.com/auth/drive.file`
-   - Under **Test users**, add your own Google email
+   - Under **Test users**, add your own Google email (required while the app is in Testing mode; not needed once the OAuth app is published to Production)
 4. Navigate to **APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**
    - Application type: **Web application**
    - Authorized JavaScript origins: `http://localhost:3000`
@@ -154,19 +160,25 @@ In the Vercel dashboard, add the same environment variables from `.env.local`, t
 ```
 src/
   app/                        # Next.js App Router pages and API routes
-    [projectId]/              # Main workspace (editor, corkboard, outliner, plot-grid)
-    api/projects/             # REST API (projects CRUD, document read/write)
+    [projectId]/              # Main workspace (editor, corkboard, outliner, plot-grid, pieces, collections)
+    api/projects/             # REST API (projects CRUD, document read/write, snapshots)
     login/                    # Sign-in page
+    privacy/ terms/           # Required for Workspace Marketplace listing
+    drive-open/               # Google Drive "Open With" handler
   components/
     binder/                   # Binder tree
     editor/                   # TipTap editor, Union view
-    inspector/                # Inspector panel (meta, tags, synopsis, notes, references)
+    inspector/                # Inspector panel (documents + pieces)
+    pieces/                   # Pieces board, detailed/simple views, type management
+    collections/              # Collections list + Union view
     corkboard/                # Index card grid
     outliner/                 # Spreadsheet table view
     plot-grid/                # Plot × scene matrix
-    workspace/                # Top nav, view routing
+    workspace/                # Top nav, view routing, word count widget, offline banner
   lib/
+    cache/db.ts               # IndexedDB wrapper (documents, projects, pending writes, elements)
     google/drive.ts           # Google Drive API client
+    pieces/migration.ts       # One-time migration: Characters/Places folders → Pieces
     project/schema.ts         # TypeScript types for all project data
   store/project.ts            # Zustand store
   auth.ts                     # NextAuth v5 config
