@@ -1,3 +1,6 @@
+// Cavafy — free novel writing software
+// Copyright (C) 2024  Joshua Ferris
+// SPDX-License-Identifier: GPL-3.0-or-later
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Open_Sans } from "next/font/google";
 import { auth } from "@/auth";

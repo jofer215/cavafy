@@ -1,3 +1,6 @@
+// Cavafy — free novel writing software
+// Copyright (C) 2024  Joshua Ferris
+// SPDX-License-Identifier: GPL-3.0-or-later
 import { User, MapPin, Package, Circle, Sparkles, Star, Heart, Sword, Crown, Building, TreePine, Ship, Wand } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
